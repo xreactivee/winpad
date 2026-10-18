@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>WinPad</title>
+  <defs>
+    <radialGradient id="tile" cx="0.5" cy="0.3" r="0.85">
+      <stop offset="0" stop-color="#1b1b1f"/>
+      <stop offset="1" stop-color="#030304"/>
+    </radialGradient>
+    <linearGradient id="tileRim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="0.35" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="base" x1="512" y1="458" x2="512" y2="854" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#d9d9de"/>
+      <stop offset="1" stop-color="#8d8d94"/>
+    </linearGradient>
+    <linearGradient id="top" x1="312.5" y1="197.6" x2="683.0" y2="632.8" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c6c6cd"/>
+      <stop offset="0.45" stop-color="#68686f"/>
+      <stop offset="1" stop-color="#222226"/>
+    </linearGradient>
+    <linearGradient id="topFade" x1="492" y1="428" x2="797" y2="428" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.45"/>
+    </linearGradient>
+    <linearGradient id="topRim" x1="512" y1="172" x2="512" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="cast" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="40" stdDeviation="34" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="40"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="232" fill="url(#tile)"/>
+  <rect x="4" y="4" width="1016" height="1016" rx="228" fill="none" stroke="url(#tileRim)" stroke-width="8"/>
+  <path d="M 615.7 522.2 L 728.3 591.8 Q 832.0 656.0 728.3 720.2 L 615.7 789.8 Q 512.0 854.0 408.3 789.8 L 295.7 720.2 Q 192.0 656.0 295.7 591.8 L 408.3 522.2 Q 512.0 458.0 615.7 522.2 Z" fill="#ffffff" opacity="0.10" filter="url(#glow)"/>
+  <path d="M 615.7 522.2 L 728.3 591.8 Q 832.0 656.0 728.3 720.2 L 615.7 789.8 Q 512.0 854.0 408.3 789.8 L 295.7 720.2 Q 192.0 656.0 295.7 591.8 L 408.3 522.2 Q 512.0 458.0 615.7 522.2 Z" fill="url(#base)"/>
+  <g filter="url(#cast)">
+    <path d="M 598.3 249.5 L 710.7 350.5 Q 797.0 428.0 710.7 505.5 L 598.3 606.5 Q 512.0 684.0 425.7 606.5 L 313.3 505.5 Q 227.0 428.0 313.3 350.5 L 425.7 249.5 Q 512.0 172.0 598.3 249.5 Z" fill="url(#top)"/>
+  </g>
+  <path d="M 598.3 249.5 L 710.7 350.5 Q 797.0 428.0 710.7 505.5 L 598.3 606.5 Q 512.0 684.0 425.7 606.5 L 313.3 505.5 Q 227.0 428.0 313.3 350.5 L 425.7 249.5 Q 512.0 172.0 598.3 249.5 Z" fill="url(#topFade)"/>
+  <path d="M 598.3 249.5 L 710.7 350.5 Q 797.0 428.0 710.7 505.5 L 598.3 606.5 Q 512.0 684.0 425.7 606.5 L 313.3 505.5 Q 227.0 428.0 313.3 350.5 L 425.7 249.5 Q 512.0 172.0 598.3 249.5 Z" fill="none" stroke="url(#topRim)" stroke-width="6"/>
+</svg>
