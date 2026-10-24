@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { CloudSun, Info, LayoutGrid, Minus, Pencil, Puzzle, SlidersHorizontal, Square, Trash2, X, type LucideIcon } from "lucide-react";
+import { CloudSun, Grid, InfoCircle, Minus, Pen, Puzzle, Sliders, Stop, Trash2, X, type IconComponent } from "reicon-react";
 import { version } from "../../package.json";
 import { api, currentWindow } from "../lib/api";
 import { useApps } from "../lib/apps";
@@ -15,14 +15,14 @@ import { WidgetFrame } from "../widgets/WidgetFrame";
 import { WidgetGallery } from "../widgets/WidgetGallery";
 import { BASE, SIZE_LABEL, newWidget, useWidgets, widgetDef, withoutWidget, type WidgetInstance } from "../widgets/registry";
 
-type Section = { key: "general" | "launchpad" | "widgets" | "weather" | "about"; name: string; lede: string; icon: LucideIcon };
+type Section = { key: "general" | "launchpad" | "widgets" | "weather" | "about"; name: string; lede: string; icon: IconComponent };
 
 const SECTIONS: Section[] = [
-  { key: "general", name: "General", lede: "How WinPad fits into Windows.", icon: SlidersHorizontal },
-  { key: "launchpad", name: "Launchpad", lede: "What opens, how it is laid out and how it looks.", icon: LayoutGrid },
+  { key: "general", name: "General", lede: "How WinPad fits into Windows.", icon: Sliders },
+  { key: "launchpad", name: "Launchpad", lede: "What opens, how it is laid out and how it looks.", icon: Grid },
   { key: "widgets", name: "Widgets", lede: "Glanceable widgets on the first page of Launchpad.", icon: Puzzle },
   { key: "weather", name: "Weather", lede: "Location and units for weather widgets.", icon: CloudSun },
-  { key: "about", name: "About", lede: "", icon: Info },
+  { key: "about", name: "About", lede: "", icon: InfoCircle },
 ];
 
 export function Settings() {
@@ -78,7 +78,7 @@ function WindowControls() {
         <Minus size={16} strokeWidth={1.4} />
       </button>
       <button aria-label="Maximize" onClick={() => currentWindow?.toggleMaximize()}>
-        <Square size={12} strokeWidth={1.4} />
+        <Stop size={12} strokeWidth={1.4} />
       </button>
       <button aria-label="Close" className="close" onClick={() => currentWindow?.hide()}>
         <X size={17} strokeWidth={1.4} />
@@ -335,7 +335,7 @@ function WidgetsPane() {
                 </div>
                 <div className="widget-card-actions">
                   <button className="btn small" onClick={() => setEditId(w.id)}>
-                    <Pencil size={13} /> Edit
+                    <Pen size={13} /> Edit
                   </button>
                   <button className="icon-button danger" aria-label={`Delete ${def?.name}`} onClick={() => setWidgets((ws) => withoutWidget(ws, w.id))}>
                     <Trash2 size={15} />

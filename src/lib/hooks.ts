@@ -43,7 +43,7 @@ export function useOutsideClick(ref: RefObject<HTMLElement | null>, onOutside: (
     const handler = (e: PointerEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) cb.current();
     };
-    window.addEventListener("pointerdown", handler);
-    return () => window.removeEventListener("pointerdown", handler);
+    window.addEventListener("pointerdown", handler, true);
+    return () => window.removeEventListener("pointerdown", handler, true);
   }, [ref]);
 }

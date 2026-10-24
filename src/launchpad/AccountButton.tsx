@@ -1,5 +1,5 @@
 import { useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
-import { ChevronRight, CircleUserRound, Settings } from "lucide-react";
+import { ChevronRight, Gear, UserCircle } from "reicon-react";
 import { api, fileSrc, type Account } from "../lib/api";
 import { useOutsideClick, usePoll } from "../lib/hooks";
 import { Glass } from "../components/Glass";
@@ -10,7 +10,7 @@ type Props = { onOpen: (uri: string) => void; onSignOut: () => void; style?: CSS
 const MS_COLORS = ["#f25022", "#7fba00", "#00a4ef", "#ffb900"];
 
 function Avatar({ account, size }: { account: Account; size: number }) {
-  if (!account.picture) return <CircleUserRound size={size} strokeWidth={1.4} />;
+  if (!account.picture) return <UserCircle size={size} strokeWidth={1.4} />;
   return <img src={fileSrc(account.picture)} alt="" width={size} height={size} draggable={false} style={{ borderRadius: "50%", objectFit: "cover" }} />;
 }
 
@@ -75,7 +75,7 @@ export function AccountButton({ onOpen, onSignOut, style }: Props) {
           </div>
           <div style={{ padding: 6, boxShadow: "inset 0 .5px 0 var(--sep)" }}>
             <button className="row list-item" onClick={() => onOpen("ms-settings:yourinfo")} style={{ width: "100%", gap: 12, height: 40, padding: "0 12px" }}>
-              <Settings size={17} strokeWidth={1.7} />
+              <Gear size={17} strokeWidth={1.7} />
               <span style={{ flex: 1 }}>Account Settings</span>
               <ChevronRight size={15} color="var(--text-3)" />
             </button>

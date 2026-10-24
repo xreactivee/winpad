@@ -1,5 +1,5 @@
 import type { CSSProperties, MouseEvent, PointerEvent } from "react";
-import { Lock } from "lucide-react";
+import { Lock } from "reicon-react";
 import type { App } from "../lib/api";
 import { packPage, specs, type Cell, type Dims, type Item } from "../lib/layout";
 import { AppIcon } from "../components/AppIcon";

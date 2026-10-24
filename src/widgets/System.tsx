@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp } from "reicon-react";
 import { api } from "../lib/api";
 import { usePoll } from "../lib/hooks";
 import { formatBytes } from "../lib/util";

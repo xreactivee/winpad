@@ -7,6 +7,7 @@ mod power;
 mod shell;
 mod startbutton;
 mod system;
+mod update;
 
 use serde::Deserialize;
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
@@ -104,11 +105,13 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let handle = app.handle().clone();
             keyboard::set_enabled(read_settings(&handle).win_key);
             keyboard::start(handle.clone());
-            shell::watch_wallpaper(handle);
+            shell::watch_wallpaper(handle.clone());
+            update::watch(handle);
             Ok(())
         })
         .on_window_event(|window, event| {

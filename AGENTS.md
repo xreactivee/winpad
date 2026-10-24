@@ -14,7 +14,8 @@ npm run tauri dev          # full app (Vite :1420 + Rust debug build)
 npm run dev                # UI only, in a browser, with mock data: http://localhost:1420/?w=launchpad (or ?w=settings)
 npm test                   # vitest: src/lib/*.test.ts
 npx tsc --noEmit           # type-check
-npm run tauri build        # NSIS installer in src-tauri/target/release/bundle/nsis/
+npm run tauri build        # NSIS installer + .sig in src-tauri/target/release/bundle/nsis/ (needs TAURI_SIGNING_PRIVATE_KEY)
+node scripts/latest-json.mjs   # release/latest.json for the updater, after a build
 cd src-tauri && cargo test && cargo clippy --all-targets
 ```
 
@@ -53,6 +54,7 @@ src-tauri/src/
   system.rs              battery, sys stats, media sessions
   phone.rs               phone panel data from Phone Link's Start-menu card (name, picture, status only)
   power.rs               power menu: pending-update check, lock, sign out, sleep, shut down, restart
+  update.rs              background self-update from GitHub releases (release builds only)
   account.rs             account card: full name, Microsoft account email, account picture
 ```
 
@@ -118,6 +120,12 @@ The previous version was unusably laggy; these rules fixed it.
 
 - Pin exact versions, and choose releases that are at least two weeks old.
 - Do not add a dependency for something a few lines can do.
+
+### Self-update and releases
+
+- **How it works.** `update::watch` checks `https://github.com/xreactivee/winpad/releases/latest/download/latest.json` a minute after start and then every 6 hours. A newer version is downloaded, installed with the NSIS installer in quiet mode (`/S /UPDATE /R`), and WinPad restarts. It never installs while Launchpad is visible. Debug builds never update.
+- **Signing.** Updates are verified against the `pubkey` in `tauri.conf.json`. The private key lives outside the repo at `%USERPROFILE%\.tauri\winpad.key` (no password). Never commit it; losing it means installed copies can no longer update. Builds need `TAURI_SIGNING_PRIVATE_KEY` set to that path.
+- **Releasing.** Bump the version, build, run `node scripts/latest-json.mjs`, then attach both `release/WinPad_<version>_x64-setup.exe` and `release/latest.json` to the GitHub release `v<version>`. A release without `latest.json` (or a draft or prerelease) is invisible to the updater.
 
 ### Power menu
 

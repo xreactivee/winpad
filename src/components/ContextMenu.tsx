@@ -1,10 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { LucideIcon } from "lucide-react";
+import type { IconComponent } from "reicon-react";
 import { Glass } from "./Glass";
 
 export type MenuItem =
   | { separator: true }
-  | { label: string; onClick: () => void; icon?: LucideIcon; danger?: boolean; disabled?: boolean; separator?: false };
+  | { label: string; onClick: () => void; icon?: IconComponent; danger?: boolean; disabled?: boolean; separator?: false };
 
 type Anchor = { clientX: number; clientY: number; preventDefault?: () => void };
 type Open = { x: number; y: number; items: MenuItem[]; alignRight: boolean } | null;

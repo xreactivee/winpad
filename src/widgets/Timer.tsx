@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play, RotateCcw } from "lucide-react";
+import { ArrowRotate, Pause, Play } from "reicon-react";
 import { formatDuration } from "../lib/time";
 import { Ring } from "./Ring";
 import type { WidgetProps } from "./shared";
@@ -64,10 +64,10 @@ export function Timer({ w }: WidgetProps) {
   const controls = (
     <div className="row" style={{ gap: 10 }} onPointerDown={(e) => e.stopPropagation()}>
       <button aria-label="Reset" className="round-control" onClick={reset} style={{ background: "rgba(255,255,255,.16)" }}>
-        <RotateCcw size={16} />
+        <ArrowRotate size={16} />
       </button>
       <button aria-label={running ? "Pause" : "Start"} className="round-control" onClick={toggle} style={{ background: running ? "rgba(255,159,10,.35)" : "rgba(48,209,88,.35)" }}>
-        {running ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
+        {running ? <Pause size={16} weight="Filled" /> : <Play size={16} weight="Filled" />}
       </button>
     </div>
   );

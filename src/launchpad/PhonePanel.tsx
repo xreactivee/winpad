@@ -1,5 +1,5 @@
 import type { CSSProperties, MouseEvent, SyntheticEvent } from "react";
-import { ChevronRight, Image, MessageSquare, MoreHorizontal, Phone as PhoneIcon, Send, Smartphone, X } from "lucide-react";
+import { Call, ChatSquare, ChevronRight, Image, Mobile, MoreH, Send, X } from "reicon-react";
 import { api } from "../lib/api";
 import { usePoll } from "../lib/hooks";
 import { openMenu } from "../components/ContextMenu";
@@ -8,8 +8,8 @@ import { RoundButton } from "../components/controls";
 export const PHONE_PANEL_W = 320;
 
 const ACTIONS = [
-  { label: "Messages", Icon: MessageSquare, uri: "ms-phone:messages" },
-  { label: "Calls", Icon: PhoneIcon, uri: "ms-phone:calling" },
+  { label: "Messages", Icon: ChatSquare, uri: "ms-phone:messages" },
+  { label: "Calls", Icon: Call, uri: "ms-phone:calling" },
   { label: "Photos", Icon: Image, uri: "ms-phone:photos" },
   { label: "Send files", Icon: Send, uri: "ms-phone:filetransfer" },
 ];
@@ -70,7 +70,7 @@ export function PhonePanel({ onOpen, onCollapse, style }: Props) {
         </>
       ) : (
         <div style={{ display: "grid", justifyItems: "center", gap: 10, padding: "30px 24px", textAlign: "center" }}>
-          <Smartphone size={56} strokeWidth={1.2} color="var(--text-2)" />
+          <Mobile size={56} strokeWidth={1.2} color="var(--text-2)" />
           <div style={{ fontSize: 16, fontWeight: 600 }}>Connect your phone</div>
           <div style={{ fontSize: 12, color: "var(--text-2)", lineHeight: 1.5 }}>Link your Android phone or iPhone with Phone Link to see it here.</div>
           <button className="btn primary" style={{ marginTop: 6 }} onClick={() => onOpen("ms-phone:")}>
@@ -85,7 +85,7 @@ export function PhonePanel({ onOpen, onCollapse, style }: Props) {
           Open Phone Link <ChevronRight size={14} />
         </button>
         <button aria-label="More" className="hover-fill" onClick={more} style={{ width: 30, height: 30, borderRadius: 8, display: "grid", placeItems: "center" }}>
-          <MoreHorizontal size={18} />
+          <MoreH size={18} />
         </button>
       </div>
     </div>
@@ -93,7 +93,7 @@ export function PhonePanel({ onOpen, onCollapse, style }: Props) {
 }
 
 function PhonePicture({ wallpaper, frame }: { wallpaper: string | null; frame: string | null }) {
-  if (!wallpaper && !frame) return <Smartphone size={64} strokeWidth={1.1} />;
+  if (!wallpaper && !frame) return <Mobile size={64} strokeWidth={1.1} />;
   return (
     <div style={{ position: "relative", width: 56, height: 100 }}>
       {wallpaper && <img src={wallpaper} alt="" draggable={false} style={{ position: "absolute", inset: "3px 4px", width: 48, height: 94, objectFit: "cover", borderRadius: 7 }} />}
@@ -105,7 +105,7 @@ function PhonePicture({ wallpaper, frame }: { wallpaper: string | null; frame: s
 export function PhoneToggle({ onOpen, style }: { onOpen: () => void; style?: CSSProperties }) {
   return (
     <RoundButton label="Show phone panel" onClick={onOpen} style={style}>
-      <Smartphone size={16} />
+      <Mobile size={16} />
     </RoundButton>
   );
 }

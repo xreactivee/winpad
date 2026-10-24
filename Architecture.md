@@ -16,6 +16,7 @@ WinPad is a single Tauri v2 process: a Rust core plus a WebView2 front end, Wind
 │  system.rs     battery, CPU/RAM/disk/net, media sessions    │
 │  phone.rs      Phone Link card -> phone panel data          │
 │  power.rs      lock, sign out, sleep, shut down, restart    │
+│  update.rs     background self-update from GitHub releases  │
 │  account.rs    Windows account card (name, email, picture)  │
 │        ▲ invoke (commands)          │ emit (events)         │
 │        │                            ▼                       │
@@ -32,11 +33,11 @@ Both windows are created hidden at startup and live for the whole session. Closi
 
 | Layer | Choice |
 |---|---|
-| Shell | Tauri 2.12 (`protocol-asset`), plugins: store, autostart, single-instance, dialog |
+| Shell | Tauri 2.12 (`protocol-asset`), plugins: store, autostart, single-instance, dialog, updater |
 | Native | Rust 2021, `windows` 0.62 (Win32 + WinRT), `sysinfo`, `png` |
-| UI | React 19, TypeScript 7, Vite 8, `lucide-react`, `@fontsource-variable/inter`, `thinking-orbs` |
+| UI | React 19, TypeScript 7, Vite 8, `reicon-react`, `@fontsource-variable/inter`, `thinking-orbs` |
 | Tests | Vitest (`src/lib/*.test.ts`: layout, categories, time), `cargo test` (Win-key state machine, junk filter, Phone Link card, file search query and ranking) |
-| Packaging | NSIS, per-user install (`npm run tauri build`) |
+| Packaging | NSIS, per-user install (`npm run tauri build`), signed updater artifacts (`createUpdaterArtifacts`) |
 
 Dependency versions are pinned exactly in `package.json` and `Cargo.toml`.
 
@@ -123,6 +124,12 @@ All commands are `#[tauri::command(async)]` or `async fn`. Sync Tauri commands r
 - **Sleep.** Modern Standby PCs (`AoAc`) turn the display off, which is how they enter standby; other PCs call `SetSuspendState`.
 - **Lock / sign out.** `LockWorkStation` and `ExitWindowsEx(EWX_LOGOFF)`.
 - Every action runs 300ms later on its own thread, so Launchpad can close first.
+
+### `update.rs`: self-update
+
+- Release builds only. A minute after start, then every 6 hours, `tauri-plugin-updater` reads `latest.json` from the latest GitHub release (`plugins.updater.endpoints`).
+- A newer version is downloaded and checked against the minisign `pubkey`. Installation waits while Launchpad is visible, then runs the NSIS installer in quiet mode (`/S /UPDATE /R`): WinPad exits, the installer replaces it silently and starts it again.
+- `scripts/latest-json.mjs` writes `release/latest.json` (`version`, `pub_date`, `platforms.windows-x86_64.{signature, url}`) from the build's `.sig` file.
 
 ### Shared helpers (`shell.rs`)
 
@@ -234,6 +241,7 @@ npm run tauri build    # src-tauri/target/release/bundle/nsis/WinPad_<version>_x
 ## Security and privacy
 
 - **CSP:** only self, the asset protocol and IPC, plus `api.open-meteo.com` and `geocoding-api.open-meteo.com`.
+- **Updates:** fetched by Rust (not the web view) from GitHub releases and accepted only with a valid signature.
 - **Asset protocol:** scope is `$APPCACHE/**` and `$APPDATA/**`. Photo folders the user picks are added at runtime.
 - **Capabilities:** `src-tauri/capabilities/default.json` grants only basic window control (show, hide, close, minimize, maximize, focus, drag) plus the store, autostart and dialog plugins.
 - **Taskbar:** WinPad never changes taskbar or system settings. The only write outside its own data is the optional autostart Run key.

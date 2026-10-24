@@ -1,4 +1,4 @@
-import { Music, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { Music, Next, Pause, Play, Previous } from "reicon-react";
 import type { MouseEvent } from "react";
 import { api, fileSrc, type MediaAction } from "../lib/api";
 import { usePoll } from "../lib/hooks";
@@ -12,13 +12,13 @@ function MediaControls({ playing, size = 22 }: { playing: boolean; size?: number
   return (
     <div className="row" style={{ gap: size * 0.8 }}>
       <button aria-label="Previous" onClick={act("previous")}>
-        <SkipBack size={size} fill="currentColor" />
+        <Previous size={size} weight="Filled" />
       </button>
       <button aria-label={playing ? "Pause" : "Play"} onClick={act("toggle")}>
-        {playing ? <Pause size={size * 1.25} fill="currentColor" /> : <Play size={size * 1.25} fill="currentColor" />}
+        {playing ? <Pause size={size * 1.25} weight="Filled" /> : <Play size={size * 1.25} weight="Filled" />}
       </button>
       <button aria-label="Next" onClick={act("next")}>
-        <SkipForward size={size} fill="currentColor" />
+        <Next size={size} weight="Filled" />
       </button>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type WheelEvent } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "reicon-react";
 import type { App } from "../lib/api";
 import { useOutsideClick } from "../lib/hooks";
 import { entryId, moveEntry, type FolderEntry, type SubFolder } from "../lib/layout";

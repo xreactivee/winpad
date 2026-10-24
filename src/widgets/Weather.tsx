@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Moon, Sun, type LucideIcon } from "lucide-react";
+import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Moon, Sun, type IconComponent } from "reicon-react";
 import { DEFAULT_SETTINGS, useSettings } from "../lib/settings";
 import type { WidgetProps } from "./shared";
 
@@ -15,7 +15,7 @@ type Forecast = {
 const TTL = 15 * 60_000;
 const mem = new Map<string, { at: number; data: Forecast }>();
 
-function describe(code: number, day = true): { label: string; Icon: LucideIcon; sky: string } {
+function describe(code: number, day = true): { label: string; Icon: IconComponent; sky: string } {
   if (code === 0) return { label: "Clear", Icon: day ? Sun : Moon, sky: day ? "#2f7bd8,#7cb8f2" : "#0b1a3a,#29406e" };
   if (code <= 2) return { label: "Partly cloudy", Icon: day ? CloudSun : Moon, sky: day ? "#3b7fc4,#9cbfe0" : "#121c33,#34476b" };
   if (code === 3) return { label: "Overcast", Icon: Cloud, sky: "#55606e,#8c97a5" };

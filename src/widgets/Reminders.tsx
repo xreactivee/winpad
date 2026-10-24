@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus } from "reicon-react";
 import type { WidgetProps } from "./shared";
 
 type Todo = { id: string; text: string; done: boolean };

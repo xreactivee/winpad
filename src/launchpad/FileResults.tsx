@@ -1,5 +1,5 @@
 import type { CSSProperties, MouseEvent } from "react";
-import { File, Folder } from "lucide-react";
+import { File, Folder } from "reicon-react";
 import { fileSrc, type FileHit } from "../lib/api";
 
 type Props = {

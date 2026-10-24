@@ -1,4 +1,4 @@
-import { Minus } from "lucide-react";
+import { Minus } from "reicon-react";
 import { Glass } from "../components/Glass";
 import { widgetDef } from "./registry";
 import { BASE, type Options, type WidgetInstance } from "./shared";

@@ -1,5 +1,5 @@
 import type { KeyboardEvent, Ref } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X } from "reicon-react";
 import { Glass } from "../components/Glass";
 
 type Props = { value: string; onChange: (v: string) => void; onKeyDown: (e: KeyboardEvent) => void; ref?: Ref<HTMLInputElement> };

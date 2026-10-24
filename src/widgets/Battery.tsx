@@ -1,4 +1,4 @@
-import { BatteryCharging, BatteryFull, Plug } from "lucide-react";
+import { BatteryCharging, BatteryFull, Plug } from "reicon-react";
 import { api } from "../lib/api";
 import { usePoll } from "../lib/hooks";
 import { Ring } from "./Ring";

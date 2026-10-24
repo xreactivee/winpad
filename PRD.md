@@ -124,6 +124,12 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 - **Panel.** Like the account card in Windows' Start menu: "Microsoft" with Sign Out on top, then the picture, full name, Microsoft account email and a "My Microsoft Account" link, then Account Settings (`ms-settings:yourinfo`). A local account shows "Local Account" and no email or link.
 - The Microsoft 365 and cloud storage rows of Windows' card are left out.
 
+### Updates
+
+- WinPad updates itself in the background: it checks GitHub releases at start and every 6 hours, downloads a newer version, installs it silently and restarts.
+- It never installs while WinPad is open on screen.
+- Updates must be signed with the project's key; unsigned or tampered downloads are rejected.
+
 ### Power menu
 
 - **Button.** A round glass power button sits in the top-right corner of every view, next to the phone button.
@@ -217,7 +223,7 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 - **Robustness:** a crash must never leave Windows unusable. WinPad does not hide or modify the taskbar.
 - **Privacy:**
   - File search reads only the local Windows Search index.
-  - The only network calls go to Open-Meteo, with the city name only.
+  - The only network calls go to Open-Meteo, with the city name only, and to GitHub releases for updates.
   - The phone panel reads Phone Link's local Start-menu card, and only the phone's name, picture and status row. Contacts and calls in that card are never read into WinPad.
 - **Language:** the UI is in English. App-name matching also understands Turkish app names.
 

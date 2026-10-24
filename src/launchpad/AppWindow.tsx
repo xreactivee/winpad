@@ -1,5 +1,5 @@
 import { useState, type MouseEvent, type RefObject } from "react";
-import { Minus, Search } from "lucide-react";
+import { Minus, Search } from "reicon-react";
 import type { App, FileHit } from "../lib/api";
 import type { Group } from "../lib/categories";
 import { frosted } from "../lib/wallpaper";

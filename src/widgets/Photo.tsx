@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon } from "reicon-react";
 import { api, fileSrc } from "../lib/api";
 import type { WidgetProps } from "./shared";
 

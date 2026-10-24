@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type WheelEvent } from "react";
-import { Plus } from "lucide-react";
+import { Plus } from "reicon-react";
 import { api, currentWindow, listen, type App, type FileHit, type PowerAction } from "../lib/api";
 import { openApp, refreshApps, useApps, useFileSearch, useHistory } from "../lib/apps";
 import { CATEGORIES, categorize, categoryName, libraryGroups } from "../lib/categories";

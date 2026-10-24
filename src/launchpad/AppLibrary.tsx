@@ -1,5 +1,5 @@
 import type { MouseEvent } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "reicon-react";
 import type { App } from "../lib/api";
 import type { Group } from "../lib/categories";
 import { AppIcon } from "../components/AppIcon";

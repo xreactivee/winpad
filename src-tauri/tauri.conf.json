@@ -52,6 +52,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": [
       "nsis"
     ],
@@ -64,6 +65,17 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY2MDk0MDNCNTU3RTM1OTIKUldTU05YNVZPMEFKOWhyYzlVcFZZcTdHZTlvNVVMdkRHQThiL2lJdU5lcFFVc0lPY2x2U2ZxOHUK",
+      "endpoints": [
+        "https://github.com/xreactivee/winpad/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "quiet"
       }
     }
   }
