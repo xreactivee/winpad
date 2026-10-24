@@ -1,4 +1,6 @@
+mod account;
 mod apps;
+mod files;
 mod keyboard;
 mod phone;
 mod power;
@@ -34,7 +36,7 @@ fn place_launchpad(w: &WebviewWindow) {
     let _ = w.set_size(PhysicalSize::new(mon.size().width, mon.size().height));
 }
 
-pub fn toggle_launchpad(app: &AppHandle) {
+pub fn toggle_launchpad(app: &AppHandle, search: bool) {
     let Some(w) = launchpad(app) else { return };
     if w.is_visible().unwrap_or(false) {
         let _ = w.emit("launchpad-close", ());
@@ -42,7 +44,7 @@ pub fn toggle_launchpad(app: &AppHandle) {
         place_launchpad(&w);
         let _ = w.show();
         shell::focus(&w);
-        let _ = w.emit("launchpad-open", ());
+        let _ = w.emit("launchpad-open", search);
     }
 }
 
@@ -125,6 +127,8 @@ pub fn run() {
             apps::open_path,
             apps::reveal_app,
             apps::list_images,
+            files::search_files,
+            account::account_info,
             phone::phone_info,
             power::power_info,
             power::power_action,

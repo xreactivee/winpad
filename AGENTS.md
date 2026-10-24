@@ -4,7 +4,7 @@ Guidance for AI coding agents working on WinPad. Read this first, then PRD.md (w
 
 ## What this is
 
-WinPad is a Windows-only Tauri v2 app (Rust + React/TypeScript) that replaces the Start menu with a full-screen, macOS-style Launchpad. The Win key or the Start button opens it. It provides pages of apps, icon-sized folders (nestable one level), locked positions, widgets (including interactive orbs), an App Library and a compact Applications window. A setting picks which of the three views opens. There is deliberately **no** dock, menu bar or desktop widgets; the project used to be a full "WidOS" shell, and those parts were removed. Do not reintroduce them.
+WinPad is a Windows-only Tauri v2 app (Rust + React/TypeScript) that replaces the Start menu with a full-screen, macOS-style Launchpad. The Win key or the Start button opens it; the taskbar search button opens it with the search field focused. It provides pages of apps, icon-sized folders (nestable one level), locked positions, widgets (including interactive orbs), an App Library, a compact Applications window, search across apps plus indexed files and folders, and the Windows account card. A setting picks which of the three views opens. There is deliberately **no** dock, menu bar or desktop widgets; the project used to be a full "WidOS" shell, and those parts were removed. Do not reintroduce them.
 
 ## Commands
 
@@ -38,7 +38,7 @@ src/                     React front end (one bundle; main.tsx picks the view by
     categories.ts        App Library categories and libraryGroups
     time.ts, util.ts     pure helpers (time formatting; clamp, uid, fold, byId, formatBytes)
     *.test.ts            vitest suites, one per pure module; extend them for any logic change
-  launchpad/             Launchpad.tsx (state, drag and drop, menus), Grid, Folder, AppLibrary, AppWindow, PhonePanel, PowerButton, SearchBar
+  launchpad/             Launchpad.tsx (state, drag and drop, menus), Grid, Folder, AppLibrary, AppWindow, PhonePanel, PowerButton, AccountButton, SearchBar, FileResults
   widgets/               registry.ts + shared.ts + one component per widget + WidgetFrame/Gallery/Editor
   settings/Settings.tsx  Settings window
   components/            Glass, AppIcon, AppTile, Backdrop, ContextMenu, Dots, Logo, Modal, controls (Switch, Segmented, Select, Slider, RoundButton)
@@ -46,12 +46,14 @@ src/                     React front end (one bundle; main.tsx picks the view by
 src-tauri/src/
   lib.rs                 windows, commands, toggle_launchpad / refocus_launchpad
   keyboard.rs            Win-key hook + Start-menu fallback (WinKeyTracker is unit-tested)
-  startbutton.rs         mouse hook that swallows Start button clicks; UIA finds the button
+  startbutton.rs         mouse hook that swallows Start and search button clicks; UIA finds the buttons
   apps.rs                installed apps, icon cache, launching
+  files.rs               file and folder search through the Windows Search index (OLE DB)
   shell.rs               focus, wallpaper, the com() helper, cache helpers
   system.rs              battery, sys stats, media sessions
   phone.rs               phone panel data from Phone Link's Start-menu card (name, picture, status only)
   power.rs               power menu: pending-update check, lock, sign out, sleep, shut down, restart
+  account.rs             account card: full name, Microsoft account email, account picture
 ```
 
 ## Rules that matter here
@@ -91,11 +93,20 @@ The previous version was unusably laggy; these rules fixed it.
 - **Never call `SendInput` (or anything slow) on a hook thread.** Windows runs injected input back through our own low-level hook, the call times out, and Windows silently removes the hook. Use `send_keys`, which uses its own thread. Each hook has its own thread.
 - **Windows does not call our low-level hooks for input aimed at our own foreground window.** While Launchpad has focus, the Win key is handled in the page: Meta keydown calls `mask_win`, and a lone Meta keyup closes. Keep both paths.
 - **Win key path:** swallow only the lone Win-up, then inject `0xE8` and replay the Win-up. Never swallow Win-down, or Win+E and the other shortcuts break.
-- **Start button:** the mouse hook swallows clicks inside the UIA `StartButton` rectangle, which refreshes while the pointer is near the taskbar.
+- **Start and search buttons:** the mouse hook swallows clicks inside the UIA `StartButton` and `SearchButton` rectangles, which refresh while the pointer is near the taskbar. A search button click opens Launchpad with the search field focused.
+  - Look the buttons up from the taskbar's `Windows.UI.Composition.DesktopWindowContentBridge` child, not from `Shell_TrayWnd`: that bridge window is not visible to Win32, so UIA does not walk into it from the tray, and on current builds the lookup from `Shell_TrayWnd` finds nothing.
 - **Fallback:** this is the WinEvent path: `EVENT_OBJECT_UNCLOAKED` on `StartMenuExperienceHost`'s CoreWindow, plus `EVENT_SYSTEM_FOREGROUND`.
   - It opens Launchpad only after focus has left Start and SearchHost; a missing foreground window counts as still in transit.
   - If Launchpad was already open, it only closes things.
   - Do not "simplify" this into opening immediately: Windows hands focus back to the previous app and Launchpad would close at once.
+
+### File search
+
+- **Source.** `search_files` queries the Windows Search index (`SystemIndex`) over OLE DB, the same index Windows' own search uses. It matches word prefixes in the file name, skips `.lnk` (apps already cover those) and folders whose path contains `node_modules`, `target` or `AppData`.
+  - Exclude noise with `NOT CONTAINS(System.ItemFolderPathDisplay, ...)`. `NOT ... LIKE '%x%'` on the path is about 20 times slower (over a second on a developer machine).
+  - Read paths from `System.ItemUrl`, not `System.ItemPathDisplay`: the display path is localized (`C:\Kullanıcılar\...`) and cannot be opened.
+- **Ranking.** `best_matches` puts exact names first, then names that start with the query, then the rest, keeping the index's most-recent-first order inside each tier. Keep `files::tests` in sync.
+- **Web results** are not shown, on purpose.
 
 ### Phone panel
 
@@ -110,7 +121,7 @@ The previous version was unusably laggy; these rules fixed it.
 
 ### Power menu
 
-- Power actions run only from a click in the power menu, never from anything else.
+- Power actions run only from a click in the power menu (or Sign Out in the account panel), never from anything else.
 - `power_action` acts 300ms later so Launchpad can close first. Keep the action names camelCase on both sides (`PowerAction` in Rust and `lib/api.ts`).
 
 ### Code style

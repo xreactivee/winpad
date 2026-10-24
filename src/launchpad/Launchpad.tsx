@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent as ReactPointerEvent, type WheelEvent } from "react";
 import { Plus } from "lucide-react";
-import { api, currentWindow, listen, type App, type PowerAction } from "../lib/api";
-import { openApp, refreshApps, useApps, useHistory } from "../lib/apps";
+import { api, currentWindow, listen, type App, type FileHit, type PowerAction } from "../lib/api";
+import { openApp, refreshApps, useApps, useFileSearch, useHistory } from "../lib/apps";
 import { CATEGORIES, categorize, categoryName, libraryGroups } from "../lib/categories";
 import {
   addToFolder,
@@ -20,6 +20,7 @@ import {
   setPin,
   sizeCells,
   specs,
+  stepSelection,
   syncApps,
   toItem,
   unhideApp,
@@ -47,8 +48,10 @@ import { SIZE_LABEL, useWidgets, withoutWidget, type Options, type WidgetInstanc
 import { WidgetEditor } from "../widgets/WidgetEditor";
 import { WidgetFrame } from "../widgets/WidgetFrame";
 import { WidgetGallery } from "../widgets/WidgetGallery";
+import { AccountButton } from "./AccountButton";
 import { AppLibrary, CategoryView } from "./AppLibrary";
 import { AppWindow, WINDOW_H } from "./AppWindow";
+import { FileResults } from "./FileResults";
 import { FolderIcon, FolderPanel, folderPreview } from "./Folder";
 import { Grid, itemKey, metrics, type Metrics } from "./Grid";
 import { PHONE_PANEL_W, PhonePanel, PhoneToggle } from "./PhonePanel";
@@ -155,10 +158,12 @@ export function Launchpad() {
   modalOpen.current = gallery || !!editWidget || !!catFor;
   const close = useCallback(() => setPhase((p) => (p === "open" ? "closing" : p)), []);
   const openedAt = useRef(0);
+  const searchOnOpen = useRef(false);
 
   useEffect(() => {
-    const offOpen = listen("launchpad-open", () => {
+    const offOpen = listen<boolean>("launchpad-open", (search) => {
       openedAt.current = Date.now();
+      searchOnOpen.current = !!search;
       setPhase("opening");
       setPage(0);
       void refreshApps();
@@ -175,6 +180,12 @@ export function Launchpad() {
       window.removeEventListener("blur", onBlur);
     };
   }, [close]);
+
+  useEffect(() => {
+    if (phase !== "open" || !searchOnOpen.current) return;
+    searchOnOpen.current = false;
+    searchRef.current?.focus();
+  }, [phase]);
 
   useEffect(() => {
     if (phase !== "opening") return;
@@ -212,6 +223,14 @@ export function Launchpad() {
 
   const visibleApps = useMemo(() => apps.filter((a) => !norm?.hidden.includes(a.id)), [apps, norm]);
   const results = useMemo(() => matchApps(visibleApps, query).slice(0, cols * rows), [visibleApps, query, cols, rows]);
+  const files = useFileSearch(query);
+  const fileMenu = (e: MouseEvent, f: FileHit) => {
+    e.stopPropagation();
+    openMenu(e, [
+      { label: "Open", onClick: () => openUri(f.path) },
+      { label: "Show in Explorer", onClick: () => api.revealApp(f.path) },
+    ]);
+  };
   useEffect(() => setSel(0), [query]);
 
   const go = useCallback((d: number) => setPage((p) => clamp(Math.min(p, lastPage) + d, 0, lastPage)), [lastPage]);
@@ -255,11 +274,12 @@ export function Launchpad() {
         return;
       }
       if (query) {
-        if (e.key === "ArrowRight") setSel((s) => Math.min(results.length - 1, s + 1));
-        else if (e.key === "ArrowLeft") setSel((s) => Math.max(0, s - 1));
-        else if (e.key === "ArrowDown") setSel((s) => Math.min(results.length - 1, s + cols));
-        else if (e.key === "ArrowUp") setSel((s) => Math.max(0, s - cols));
-        else if (e.key === "Enter" && results[sel]) launchApp(results[sel]);
+        if (e.key.startsWith("Arrow")) setSel((s) => stepSelection(s, e.key, results.length, files.length, cols));
+        else if (e.key === "Enter") {
+          const file = files[sel - results.length];
+          if (results[sel]) launchApp(results[sel]);
+          else if (file) openUri(file.path);
+        }
         return;
       }
       if (tag === "INPUT" || tag === "TEXTAREA") return;
@@ -541,6 +561,7 @@ export function Launchpad() {
             apps={visibleApps}
             groups={groups}
             results={results}
+            files={files}
             sel={sel}
             query={query}
             setQuery={setQuery}
@@ -548,6 +569,8 @@ export function Launchpad() {
             wallpaper={wallpaper.blurred}
             onLaunch={tapLaunch}
             onAppContext={(e, a) => appMenu(e, a)}
+            onOpenFile={(f) => openUri(f.path)}
+            onFileContext={fileMenu}
             onClose={close}
           />
           {phoneMode === "open" && <PhonePanel onOpen={openUri} onCollapse={() => setPhoneMode("collapsed")} style={{ height: WINDOW_H, ...frosted(wallpaper.blurred) }} />}
@@ -576,11 +599,18 @@ export function Launchpad() {
             </div>
 
             {query ? (
-              <div style={{ position: "absolute", left: m.padX, top: m.top, right: m.padX + phoneSide, display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gridAutoRows: m.cellH }}>
-                {results.map((a, i) => (
-                  <AppTile key={a.id} app={a} icon={m.icon} width={m.cellW} selected={i === sel} onLaunch={tapLaunch} onContext={(e, app) => appMenu(e, app)} onHover={() => setSel(i)} />
-                ))}
-                {!results.length && <div className="empty-note">No results</div>}
+              <div className="scroll" style={{ position: "absolute", left: m.padX, top: m.top, right: m.padX + phoneSide, bottom: 40 }}>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gridAutoRows: m.cellH }}>
+                  {results.map((a, i) => (
+                    <AppTile key={a.id} app={a} icon={m.icon} width={m.cellW} selected={i === sel} onLaunch={tapLaunch} onContext={(e, app) => appMenu(e, app)} onHover={() => setSel(i)} />
+                  ))}
+                  {!results.length && !files.length && <div className="empty-note">No results</div>}
+                </div>
+                {files.length > 0 && (
+                  <Glass radius={18} style={{ maxWidth: 720, margin: "12px auto 0", padding: "10px 6px 6px" }}>
+                    <FileResults files={files} sel={sel - results.length} onOpen={(f) => openUri(f.path)} onContext={fileMenu} onHover={(i) => setSel(results.length + i)} />
+                  </Glass>
+                )}
               </div>
             ) : library ? (
               <div style={{ position: "absolute", inset: 0, padding: `${m.top}px ${m.padX + phoneSide}px 40px ${m.padX}px` }}>
@@ -662,6 +692,7 @@ export function Launchpad() {
       ) : (
         <div className="row" style={{ position: "absolute", top: 33, right: 30, gap: 10 }}>
           {phoneMode === "collapsed" && <PhoneToggle onOpen={() => setPhoneMode("open")} />}
+          <AccountButton onOpen={openUri} onSignOut={() => runPower("signOut")} />
           <PowerButton onAction={runPower} />
         </div>
       )}

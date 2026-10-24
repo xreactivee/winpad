@@ -11,10 +11,12 @@ WinPad is a single Tauri v2 process: a Rust core plus a WebView2 front end, Wind
 │  startbutton.rs LL mouse hook + UIA Start button position   │
 │  lib.rs        windows, commands, toggle/refocus Launchpad  │
 │  apps.rs       installed apps, icon cache, launching        │
+│  files.rs      file/folder search via the Windows index     │
 │  shell.rs      focus, wallpaper copy + watcher, COM helper  │
 │  system.rs     battery, CPU/RAM/disk/net, media sessions    │
 │  phone.rs      Phone Link card -> phone panel data          │
 │  power.rs      lock, sign out, sleep, shut down, restart    │
+│  account.rs    Windows account card (name, email, picture)  │
 │        ▲ invoke (commands)          │ emit (events)         │
 │        │                            ▼                       │
 │ WebView2 windows (same React bundle, picked by label)       │
@@ -33,7 +35,7 @@ Both windows are created hidden at startup and live for the whole session. Closi
 | Shell | Tauri 2.12 (`protocol-asset`), plugins: store, autostart, single-instance, dialog |
 | Native | Rust 2021, `windows` 0.62 (Win32 + WinRT), `sysinfo`, `png` |
 | UI | React 19, TypeScript 7, Vite 8, `lucide-react`, `@fontsource-variable/inter`, `thinking-orbs` |
-| Tests | Vitest (`src/lib/*.test.ts`: layout, categories, time), `cargo test` (Win-key state machine, junk filter, Phone Link card) |
+| Tests | Vitest (`src/lib/*.test.ts`: layout, categories, time), `cargo test` (Win-key state machine, junk filter, Phone Link card, file search query and ranking) |
 | Packaging | NSIS, per-user install (`npm run tauri build`) |
 
 Dependency versions are pinned exactly in `package.json` and `Cargo.toml`.
@@ -53,9 +55,9 @@ Each hook gets its own thread and message loop (`hook_thread`). Windows skips a 
    - **Exception: while WinPad's own window is in the foreground, Windows does not call our low-level hooks at all.** Launchpad handles the Win key in the page instead:
      - on Meta keydown it calls the `mask_win` command, which injects `0xE8` while Win is still held;
      - on a lone Meta keyup it closes.
-2. **Start button: low-level mouse hook (`WH_MOUSE_LL`) in `startbutton.rs`.**
-   - Left clicks inside the taskbar's Start button are swallowed (both down and up), so Windows never sees them, and Launchpad toggles.
-   - The button rectangle comes from UI Automation: `Shell_TrayWnd` → descendant with AutomationId `StartButton`. A helper thread looks it up.
+2. **Start and search buttons: low-level mouse hook (`WH_MOUSE_LL`) in `startbutton.rs`.**
+   - Left clicks inside the taskbar's Start button or search button are swallowed (both down and up), so Windows never sees them, and Launchpad toggles. A search button click also focuses Launchpad's search field.
+   - The button rectangles come from UI Automation: descendants with AutomationId `StartButton` and `SearchButton` under the taskbar's XAML host, the `Windows.UI.Composition.DesktopWindowContentBridge` child of `Shell_TrayWnd`. That bridge is not a visible Win32 window, so a search from `Shell_TrayWnd` itself does not reach the XAML buttons. A helper thread looks them up.
    - The lookup refreshes, at most every 250ms, while the pointer is near the taskbar:
      - a centred taskbar moves the button as apps open and close;
      - an auto-hidden taskbar only has a button while it is shown.
@@ -78,7 +80,7 @@ Each hook gets its own thread and message loop (`hook_thread`). Windows skips a 
   - starts the hooks and the wallpaper watcher.
 - **`toggle_launchpad`:**
   - if Launchpad is visible, emits `launchpad-close`; the page animates out and hides itself;
-  - otherwise it sizes the window to the primary monitor, shows it, brings it to the front with `shell::focus` (the `AttachThreadInput` trick) and emits `launchpad-open`.
+  - otherwise it sizes the window to the primary monitor, shows it, brings it to the front with `shell::focus` (the `AttachThreadInput` trick) and emits `launchpad-open`, whose payload says whether to focus the search field (true for the taskbar search button).
 - **Single instance:** launching WinPad a second time opens Settings.
 
 ### Commands (`invoke`)
@@ -94,6 +96,8 @@ All commands are `#[tauri::command(async)]` or `async fn`. Sync Tauri commands r
 | `launch_app(id)` / `open_path(path)` | apps | `ShellExecuteExW` on its own STA thread with `SEE_MASK_NO_CONSOLE` |
 | `reveal_app(target)` | apps | Explorer `/select` |
 | `list_images(dir)` | apps | Photos widget; also widens the asset-protocol scope |
+| `search_files(query)` | files | Up to 10 indexed files and folders `{ name, path, folder, icon }`; icons go through the same PNG cache (one per extension, folder, or `.exe`) |
+| `account_info` | account | `{ name, email, picture }`: `NetUserGetInfo` level 23 (full name, SID) and 24 (Microsoft account email); the picture is the `Image192` path under `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AccountPicture\Users\<SID>`, added to the asset-protocol scope |
 | `battery`, `sys_stats` | system | Battery widget, System widget |
 | `media_info`, `media_control(action)` | system | Now Playing (GSMTC); `action` is `previous`, `next` or `toggle`; the latest artwork is cached to disk |
 | `get_wallpaper` | shell | Copies the current wallpaper into the cache so the asset protocol can serve it |
@@ -130,7 +134,7 @@ All commands are `#[tauri::command(async)]` or `async fn`. Sync Tauri commands r
 
 | Event | From → to | Payload |
 |---|---|---|
-| `launchpad-open` | Rust → launchpad | — |
+| `launchpad-open` | Rust → launchpad | `boolean`: focus the search field |
 | `launchpad-close` | Rust → launchpad | — |
 | `wallpaper-changed` | Rust watcher (10s poll) → all | `{ path, version }` |
 | `state-changed` | any window → all | `{ key, value, from }`, keeps windows in sync |
@@ -150,13 +154,13 @@ All commands are `#[tauri::command(async)]` or `async fn`. Sync Tauri commands r
 | `lib/store.ts` | Store-backed `useStored(key, default)`, `getStored` / `setStored`, cross-window sync, `onSave` hooks |
 | `lib/settings.ts` | `Settings` type, defaults, `useSettings()`, `useSetting(key)`; pushes settings to Rust on save |
 | `lib/hooks.ts` | `useNow`, `usePoll(fetch, ms)` (skips hidden documents, dedupes identical answers), `useOutsideClick` |
-| `lib/apps.ts` | `useApps`, `refreshApps`, `openApp` (records history), `useHistory` |
+| `lib/apps.ts` | `useApps`, `refreshApps`, `openApp` (records history), `useHistory`, `useFileSearch` (150ms debounce, drops stale answers) |
 | `lib/wallpaper.ts` | `useWallpaper` (pre-blurred copy) and the `frosted` style |
 | `lib/layout.ts` | Pure layout logic: packing, pagination, sync, folders, nesting, locks, search |
 | `lib/categories.ts` | App name → App Library category (keyword rules, user overrides) and `libraryGroups` |
 | `lib/time.ts` | Pure time helpers: `zoned`, `displayHour`, `longDate`, `timeInWords`, `daysUntil`, `formatDuration` |
 | `lib/util.ts` | `clamp`, `uid`, `fold` (Turkish-aware search folding), `byId`, `formatBytes` |
-| `launchpad/` | `Launchpad` (state machine, drag and drop, menus), `Grid`, `Folder` (icon + panel), `AppLibrary` (+ `CategoryView`), `AppWindow`, `PhonePanel` (+ `PhoneToggle`), `PowerButton`, `SearchBar` |
+| `launchpad/` | `Launchpad` (state machine, drag and drop, menus), `Grid`, `Folder` (icon + panel), `AppLibrary` (+ `CategoryView`), `AppWindow`, `PhonePanel` (+ `PhoneToggle`), `PowerButton`, `AccountButton`, `SearchBar`, `FileResults` |
 | `widgets/` | `registry.ts` (definitions, `newWidget`, `withoutWidget`, defaults), `shared.ts` (types, sizes, choices), `WidgetFrame`, `WidgetGallery`, `WidgetEditor` (schema-driven form), one file per widget |
 | `settings/Settings.tsx` | Settings window |
 | `components/` | `Glass`, `AppIcon`, `AppTile`, `Backdrop`, `ContextMenu`, `Dots`, `Logo`, `Modal`, `controls` (`Switch`, `Segmented`, `Select`, `Slider`, `RoundButton`) |
@@ -233,4 +237,5 @@ npm run tauri build    # src-tauri/target/release/bundle/nsis/WinPad_<version>_x
 - **Asset protocol:** scope is `$APPCACHE/**` and `$APPDATA/**`. Photo folders the user picks are added at runtime.
 - **Capabilities:** `src-tauri/capabilities/default.json` grants only basic window control (show, hide, close, minimize, maximize, focus, drag) plus the store, autostart and dialog plugins.
 - **Taskbar:** WinPad never changes taskbar or system settings. The only write outside its own data is the optional autostart Run key.
-- **Power:** shut down, restart, sleep, lock and sign out run only from a click in the power menu.
+- **Power:** shut down, restart, sleep, lock and sign out run only from a click in the power menu; sign out also from the account panel.
+- **Asset protocol additions at runtime:** photo folders the user picks, and the user's own account picture file.

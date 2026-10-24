@@ -32,6 +32,7 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 ### Opening and closing
 
 - **Opening.** A lone Win key press, or a click on the taskbar's Start button, opens WinPad. Neither shows Windows' Start menu at any point. Ctrl+Esc also opens WinPad, with a brief flash of Windows' menu.
+  - A click on the taskbar's search button opens WinPad with its search field focused instead of Windows Search. Win+S still opens Windows Search.
   - If WinPad is already open, the same input closes it, and it never reopens by itself.
   - Win key shortcuts (Win+E, Win+R, Win+D, …) keep working unchanged.
 - **Closing.** These close WinPad:
@@ -117,6 +118,12 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 - **Setting.** Settings → Launchpad → Phone panel: Open, Button (a small phone button at the top right) or Off.
 - **Without Phone Link.** "Connect your phone" appears with a button that starts Phone Link setup.
 
+### Account
+
+- **Button.** A round glass button with the account picture sits in the top-right corner of every view, between the phone button and the power button.
+- **Panel.** Like the account card in Windows' Start menu: "Microsoft" with Sign Out on top, then the picture, full name, Microsoft account email and a "My Microsoft Account" link, then Account Settings (`ms-settings:yourinfo`). A local account shows "Local Account" and no email or link.
+- The Microsoft 365 and cloud storage rows of Windows' card are left out.
+
 ### Power menu
 
 - **Button.** A round glass power button sits in the top-right corner of every view, next to the phone button.
@@ -129,6 +136,11 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 - Typing anywhere starts a search, and clicking the search field works too.
 - Matching is accent- and Turkish-casing-aware. Prefix matches come first, then word-start matches, then substring matches.
 - Arrow keys move the selection and Enter launches. Hidden apps are excluded.
+- **Files and folders.** Below the apps, up to 10 files and folders from the Windows Search index, the same index Windows' own search uses: icon, name and containing folder.
+  - Exact names come first, then names starting with the query, then other word matches, newest first.
+  - Build and dependency folders (`node_modules`, `target`) and `AppData` are left out; so are shortcuts, which the app list already covers.
+  - Enter or a click opens the item; right-click offers Open and Show in Explorer.
+  - No web results.
 
 ### Widgets
 
@@ -204,6 +216,7 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 - **Startup:** the WinPad window is created hidden at login and shown on demand, so opening is instant.
 - **Robustness:** a crash must never leave Windows unusable. WinPad does not hide or modify the taskbar.
 - **Privacy:**
+  - File search reads only the local Windows Search index.
   - The only network calls go to Open-Meteo, with the city name only.
   - The phone panel reads Phone Link's local Start-menu card, and only the phone's name, picture and status row. Contacts and calls in that card are never read into WinPad.
 - **Language:** the UI is in English. App-name matching also understands Turkish app names.
@@ -212,7 +225,7 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 
 - Primary monitor only.
 - When an elevated (administrator) window has focus, the low-level keyboard hook cannot see the Win key, so Windows' Start opens instead (UIPI).
-- Start button clicks are recognized through the taskbar's UI Automation element `StartButton`, primary taskbar only. If that lookup fails, the fallback watches Windows' own processes (`StartMenuExperienceHost.exe` / `SearchHost.exe`) and shows a brief flash of Windows' menu. A future Windows redesign may require an update.
+- Start and search button clicks are recognized through the taskbar's UI Automation elements `StartButton` and `SearchButton`, primary taskbar only. The search box style of the taskbar search is untested. If that lookup fails, the fallback watches Windows' own processes (`StartMenuExperienceHost.exe` / `SearchHost.exe`) and shows a brief flash of Windows' menu. A future Windows redesign may require an update.
 - Unsigned installer, so SmartScreen warns on first run.
 
 ## Success criteria

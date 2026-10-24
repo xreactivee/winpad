@@ -1,4 +1,4 @@
-import { fold, uid } from "./util";
+import { clamp, fold, uid } from "./util";
 
 export type WidgetSize = "s" | "m" | "l";
 export type Pin = { col: number; row: number };
@@ -282,4 +282,15 @@ export function matchApps<T extends { name: string }>(apps: T[], query: string):
     .filter((x) => x.r >= 0)
     .sort((x, y) => x.r - y.r || x.a.name.localeCompare(y.a.name, "tr"))
     .map((x) => x.a);
+}
+
+export function stepSelection(sel: number, key: string, apps: number, files: number, cols: number): number {
+  const inApps = sel < apps;
+  const next =
+    key === "ArrowRight" ? sel + 1
+    : key === "ArrowLeft" ? sel - 1
+    : key === "ArrowDown" ? (inApps ? Math.min(sel + cols, apps) : sel + 1)
+    : key === "ArrowUp" ? (inApps ? sel - cols : sel === apps ? apps - 1 : sel - 1)
+    : sel;
+  return clamp(next, 0, Math.max(0, apps + files - 1));
 }

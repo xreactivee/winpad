@@ -1,15 +1,17 @@
 import { useState, type MouseEvent, type RefObject } from "react";
 import { Minus, Search } from "lucide-react";
-import type { App } from "../lib/api";
+import type { App, FileHit } from "../lib/api";
 import type { Group } from "../lib/categories";
 import { frosted } from "../lib/wallpaper";
 import { AppTile } from "../components/AppTile";
 import { Logo } from "../components/Logo";
+import { FileResults } from "./FileResults";
 
 type Props = {
   apps: App[];
   groups: Group[];
   results: App[];
+  files: FileHit[];
   sel: number;
   query: string;
   setQuery: (q: string) => void;
@@ -17,6 +19,8 @@ type Props = {
   wallpaper: string;
   onLaunch: (a: App) => void;
   onAppContext: (e: MouseEvent, a: App) => void;
+  onOpenFile: (f: FileHit) => void;
+  onFileContext: (e: MouseEvent, f: FileHit) => void;
   onClose: () => void;
 };
 
@@ -26,7 +30,7 @@ const ICON = 56;
 const CELL_W = 98;
 const CELL_H = 96;
 
-export function AppWindow({ apps, groups, results, sel, query, setQuery, searchRef, wallpaper, onLaunch, onAppContext, onClose }: Props) {
+export function AppWindow({ apps, groups, results, files, sel, query, setQuery, searchRef, wallpaper, onLaunch, onAppContext, onOpenFile, onFileContext, onClose }: Props) {
   const [chip, setChip] = useState<string | null>(null);
   const categories = groups.filter((g) => g.key !== "recent" && g.key !== "hidden");
   const recent = groups.find((g) => g.key === "recent")?.apps ?? [];
@@ -95,7 +99,8 @@ export function AppWindow({ apps, groups, results, sel, query, setQuery, searchR
           </>
         )}
         <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, ${CELL_W}px)`, justifyContent: "center" }}>{list.map((a, i) => tile(a, i, !!query && i === sel))}</div>
-        {query && !results.length && <div className="empty-note">No results</div>}
+        {query && <FileResults files={files} sel={sel - results.length} onOpen={onOpenFile} onContext={onFileContext} style={{ margin: "10px 6px 0" }} />}
+        {query && !results.length && !files.length && <div className="empty-note">No results</div>}
       </div>
     </div>
   );

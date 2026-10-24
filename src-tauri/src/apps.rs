@@ -113,7 +113,7 @@ unsafe fn bitmap_rgba(hbmp: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
     Some((w as u32, h as u32, px))
 }
 
-fn cached_icon(dir: &Path, key: &str, item: &IShellItem) -> Option<String> {
+pub fn cached_icon(dir: &Path, key: &str, item: &IShellItem) -> Option<String> {
     let out = dir.join(format!("{}.png", hash_hex(key)));
     if !out.exists() {
         unsafe { save_icon(item, &out).ok()? };

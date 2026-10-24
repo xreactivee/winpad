@@ -71,7 +71,7 @@ Other spacing rules:
 - **App Library cards:** `min(cellW × 1.55, …, 240px)` square, 4 per row.
 - **Search pill:** 260×32 px, radius 12, centered 34px from the top.
 - **Settings:** content column max 760px with 34px side padding; rows min-height 58px with 12px/18px padding; 24px between cards; sidebar 232px wide, nav items 36px tall.
-- **Corner buttons:** 34px glass circles, 33px from the top and 30px from the right, 10px apart: phone (when collapsed) then power.
+- **Corner buttons:** 34px glass circles, 33px from the top and 30px from the right, 10px apart: phone (when collapsed), account, then power.
 
 ## Shape
 
@@ -161,6 +161,8 @@ Other rules:
 | `AppLibrary` / `CategoryView` | `launchpad/AppLibrary.tsx` | Category cards; the in-place category grid |
 | `PhonePanel` / `PhoneToggle` | `launchpad/PhonePanel.tsx` | 320px glass side panel, radius 26: close button, phone picture (Phone Link thumbnail in its frame, 56×100), name 17px/600, status row (Phone Link's own 20px icons plus text), 44px shortcut rows with 19px lucide icons, and a footer bar (`rgba(0,0,0,.18)`) with "Open Phone Link ›" and "…". Gets `frosted` in the window view. The toggle is a 34px glass circle at the top right |
 | `AppWindow` | `launchpad/AppWindow.tsx` | Floating Applications panel: min(860, 92vw) × min(620, 84vh), radius 26; title, search, category chips, recent row, divider, 98×96 tiles with 56px icons. Frosted via the fixed pre-blurred wallpaper; no backdrop dim |
+| `AccountButton` | `launchpad/AccountButton.tsx` | 34px glass circle with the 30px account picture (lucide user icon without one); opens a 340px `solid frost` panel, radius 16, right-aligned 44px below: header ("Microsoft" with the four-square mark, Sign Out), 72px picture with name 17px/600, email 12.5px in `--text-2` and an `--accent-hover` link, then an Account Settings row |
+| `FileResults` | `launchpad/FileResults.tsx` | "Files and Folders" caption (12px/600, `--text-3`) and 48px `.list-item` rows: 28px shell icon, name 14px/500, containing folder 12px in `--text-3`; the selected row uses `aria-pressed`. On a 720px glass card (radius 18) under the app results in Pages and App Library; bare inside the Applications window |
 | `PowerButton` | `launchpad/PowerButton.tsx` | 34px glass circle with an orange dot when updates are ready; opens the power menu right-aligned under it: Lock, Sign Out, Sleep, (Update and Shut Down), Shut Down, (Update and Restart), Restart |
 | `Dots` | `components/Dots.tsx` | 8px page dots, white when active |
 | `WidgetFrame` | `widgets/WidgetFrame.tsx` | Scales a widget to its slot; glass or bare (orb, flip clock, photo fill); remove button in edit mode |

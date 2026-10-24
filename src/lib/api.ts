@@ -10,6 +10,8 @@ export const currentWindow = inTauri ? getCurrentWebviewWindow() : null;
 export const windowLabel: string = currentWindow?.label ?? new URLSearchParams(location.search).get("w") ?? "launchpad";
 
 export type App = { id: string; name: string; target: string | null; icon: string | null };
+export type FileHit = { name: string; path: string; folder: boolean; icon: string | null };
+export type Account = { name: string; email: string | null; picture: string | null };
 export type Battery = { percent: number; charging: boolean };
 export type Stats = { cpu: number; memUsed: number; memTotal: number; diskUsed: number; diskTotal: number; netRx: number; netTx: number };
 export type Media = { title: string; artist: string; playing: boolean; thumb: string | null };
@@ -21,7 +23,7 @@ export type Power = { updates: boolean };
 export type PowerAction = "lock" | "signOut" | "sleep" | "shutDown" | "restart" | "updateShutDown" | "updateRestart";
 
 function call<T = void>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-  return inTauri ? invoke<T>(cmd, args) : Promise.resolve(mock(cmd) as T);
+  return inTauri ? invoke<T>(cmd, args) : Promise.resolve(mock(cmd, args) as T);
 }
 
 export const api = {
@@ -30,6 +32,8 @@ export const api = {
   openPath: (path: string) => call("open_path", { path }),
   revealApp: (target: string | null) => call("reveal_app", { target }),
   listImages: (dir: string) => call<string[]>("list_images", { dir }),
+  searchFiles: (query: string) => call<FileHit[]>("search_files", { query }),
+  accountInfo: () => call<Account | null>("account_info"),
   phoneInfo: () => call<Phone | null>("phone_info"),
   powerInfo: () => call<Power>("power_info"),
   powerAction: (action: PowerAction) => call("power_action", { action }),

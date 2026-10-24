@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type App } from "./api";
+import { api, type App, type FileHit } from "./api";
 import { getStored, setStored, useStored } from "./store";
 
 let cached: App[] | null = null;
@@ -23,6 +23,24 @@ export function useApps() {
     return () => void subscribers.delete(setApps);
   }, []);
   return apps;
+}
+
+export function useFileSearch(query: string) {
+  const [files, setFiles] = useState<FileHit[]>([]);
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setFiles([]);
+      return;
+    }
+    let alive = true;
+    const t = setTimeout(() => void api.searchFiles(q).then((f) => alive && setFiles(f), () => {}), 150);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [query]);
+  return files;
 }
 
 export const useHistory = () => useStored<string[]>("history", []);

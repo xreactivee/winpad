@@ -12,6 +12,7 @@ import {
   paginate,
   removeFromFolder,
   setPin,
+  stepSelection,
   syncApps,
   updateFolder,
   unhideApp,
@@ -209,5 +210,23 @@ describe("matchApps", () => {
 
   it("returns nothing for an empty query", () => {
     expect(matchApps(apps, "  ")).toEqual([]);
+  });
+});
+
+describe("stepSelection", () => {
+  it("moves through the app grid by rows and columns", () => {
+    expect(stepSelection(1, "ArrowDown", 10, 0, 4)).toBe(5);
+    expect(stepSelection(9, "ArrowDown", 10, 0, 4)).toBe(9);
+    expect(stepSelection(2, "ArrowUp", 10, 0, 4)).toBe(0);
+    expect(stepSelection(0, "ArrowLeft", 10, 0, 4)).toBe(0);
+  });
+
+  it("drops from the last app row into the file list and back", () => {
+    expect(stepSelection(7, "ArrowDown", 10, 3, 4)).toBe(10);
+    expect(stepSelection(10, "ArrowDown", 10, 3, 4)).toBe(11);
+    expect(stepSelection(12, "ArrowDown", 10, 3, 4)).toBe(12);
+    expect(stepSelection(10, "ArrowUp", 10, 3, 4)).toBe(9);
+    expect(stepSelection(0, "ArrowDown", 0, 3, 4)).toBe(1);
+    expect(stepSelection(0, "ArrowUp", 0, 3, 4)).toBe(0);
   });
 });

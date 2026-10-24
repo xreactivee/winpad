@@ -107,11 +107,11 @@ pub fn mask_win() {
     tap(VK_MASK);
 }
 
-pub fn open_launchpad() {
+pub fn open_launchpad(search: bool) {
     *LAST_OWN.lock().unwrap_or_else(|e| e.into_inner()) = Some(Instant::now());
     if let Some(app) = APP.get() {
         let app = app.clone();
-        std::thread::spawn(move || crate::toggle_launchpad(&app));
+        std::thread::spawn(move || crate::toggle_launchpad(&app, search));
     }
 }
 
@@ -123,7 +123,7 @@ unsafe extern "system" fn keyboard_proc(code: i32, wparam: WPARAM, lparam: LPARA
         let action = TRACKER.lock().map(|mut t| t.on_key(k.vkCode, down, injected)).unwrap_or(Action::Pass);
         if action == Action::MaskAndToggle {
             send_keys(&[(VK_MASK, false), (VK_MASK, true), (k.vkCode as u16, true)]);
-            open_launchpad();
+            open_launchpad(false);
             return LRESULT(1);
         }
     }
@@ -180,7 +180,7 @@ unsafe extern "system" fn start_menu_proc(
         }
         std::thread::sleep(Duration::from_millis(60));
         if let Some(app) = APP.get() {
-            crate::toggle_launchpad(app);
+            crate::toggle_launchpad(app, false);
             std::thread::sleep(Duration::from_millis(400));
             crate::refocus_launchpad(app);
         }
