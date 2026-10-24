@@ -232,7 +232,6 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 - Primary monitor only.
 - When an elevated (administrator) window has focus, the low-level keyboard hook cannot see the Win key, so Windows' Start opens instead (UIPI).
 - Start and search button clicks are recognized through the taskbar's UI Automation elements `StartButton` and `SearchButton`, primary taskbar only. The search box style of the taskbar search is untested. If that lookup fails, the fallback watches Windows' own processes (`StartMenuExperienceHost.exe` / `SearchHost.exe`) and shows a brief flash of Windows' menu. A future Windows redesign may require an update.
-- Unsigned installer, so SmartScreen warns on first run.
 
 ## Success criteria
 
