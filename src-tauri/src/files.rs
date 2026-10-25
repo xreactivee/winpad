@@ -1,17 +1,23 @@
-use crate::apps::cached_icon;
+use crate::apps::{cached_icon, take_pwstr};
 use crate::shell::{cache_dir, com};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::mem::{offset_of, size_of, ManuallyDrop};
-use std::path::Path;
-use tauri::AppHandle;
-use windows::core::{w, Interface, GUID, HSTRING, IUnknown};
-use windows::Win32::System::Com::{CoCreateInstance, CoTaskMemFree, CLSCTX_INPROC_SERVER};
+use std::path::{Path, PathBuf};
+use std::time::UNIX_EPOCH;
+use tauri::{AppHandle, Manager};
+use windows::core::{w, Interface, GUID, HSTRING, IUnknown, PCWSTR};
+use windows::Win32::System::Com::{
+    CoCreateInstance, CoInitializeEx, CoTaskMemFree, CoUninitialize, CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED,
+};
 use windows::Win32::System::Search::{
     IAccessor, ICommandText, IDBCreateCommand, IDBCreateSession, IDBInitialize, IDataInitialize, IRowset, DBACCESSOR_ROWDATA,
     DBBINDING, DBMEMOWNER_CLIENTOWNED, DBPARAMIO_NOTPARAM, DBPART_LENGTH, DBPART_STATUS, DBPART_VALUE, DBSTATUS_S_OK,
     DBTYPE_WSTR, HACCESSOR,
 };
-use windows::Win32::UI::Shell::{IShellItem, SHCreateItemFromParsingName};
+use windows::Win32::UI::Shell::{
+    IShellItem, SHCreateItemFromParsingName, SHEmptyRecycleBinW, SHGetKnownFolderPath, SHQueryRecycleBinW, FOLDERID_Downloads,
+    FOLDERID_Screenshots, KF_FLAG_DEFAULT, SHQUERYRBINFO,
+};
 
 const CLSID_MSDAINITIALIZE: GUID = GUID::from_u128(0x2206cdb0_19c1_11d1_89e0_00c04fd7a829);
 const DBGUID_DEFAULT: GUID = GUID::from_u128(0xc8b521fb_5cf3_11ce_ade5_00aa0044773d);
@@ -148,6 +154,90 @@ pub async fn search_files(app: AppHandle, query: String) -> Result<Vec<FileHit>,
             .collect())
     })
     .await
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Folder {
+    Downloads,
+    Screenshots,
+}
+
+#[derive(Serialize)]
+pub struct RecentFile {
+    name: String,
+    path: String,
+    icon: Option<String>,
+    modified: u64,
+}
+
+fn known_folder(folder: &Folder) -> Option<PathBuf> {
+    let id = match folder {
+        Folder::Downloads => &FOLDERID_Downloads,
+        Folder::Screenshots => &FOLDERID_Screenshots,
+    };
+    unsafe { SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, None).ok().map(|p| PathBuf::from(take_pwstr(p))) }
+}
+
+fn is_partial(name: &str) -> bool {
+    let n = name.to_lowercase();
+    n == "desktop.ini" || [".crdownload", ".part", ".tmp", ".partial"].iter().any(|e| n.ends_with(e))
+}
+
+#[tauri::command]
+pub async fn recent_files(app: AppHandle, folder: Folder, count: usize) -> Result<Vec<RecentFile>, String> {
+    let Some(dir) = known_folder(&folder) else { return Ok(vec![]) };
+    if matches!(folder, Folder::Screenshots) {
+        let _ = app.asset_protocol_scope().allow_directory(&dir, false);
+    }
+    let icons = cache_dir(&app).join("icons");
+    com(move || {
+        let mut files: Vec<(u64, PathBuf)> = std::fs::read_dir(&dir)
+            .map(|rd| {
+                rd.flatten()
+                    .filter(|e| e.file_type().is_ok_and(|t| t.is_file()) && !is_partial(&e.file_name().to_string_lossy()))
+                    .filter_map(|e| {
+                        let modified = e.metadata().ok()?.modified().ok()?.duration_since(UNIX_EPOCH).ok()?.as_millis() as u64;
+                        Some((modified, e.path()))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        files.sort_by_key(|f| std::cmp::Reverse(f.0));
+        Ok(files
+            .into_iter()
+            .take(count)
+            .map(|(modified, path)| {
+                let path = path.to_string_lossy().into_owned();
+                let name = Path::new(&path).file_name().map_or_else(|| path.clone(), |n| n.to_string_lossy().into_owned());
+                let icon = icon_for(&icons, &path, false);
+                RecentFile { name, path, icon, modified }
+            })
+            .collect())
+    })
+    .await
+}
+
+#[derive(Serialize)]
+pub struct RecycleBin {
+    items: i64,
+    bytes: i64,
+}
+
+#[tauri::command(async)]
+pub fn recycle_bin() -> Option<RecycleBin> {
+    let mut info = SHQUERYRBINFO { cbSize: size_of::<SHQUERYRBINFO>() as u32, ..Default::default() };
+    unsafe { SHQueryRecycleBinW(PCWSTR::null(), &mut info).ok()? };
+    Some(RecycleBin { items: info.i64NumItems, bytes: info.i64Size })
+}
+
+#[tauri::command(async)]
+pub fn empty_recycle_bin() {
+    std::thread::spawn(|| unsafe {
+        let _ = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+        let _ = SHEmptyRecycleBinW(None, PCWSTR::null(), 0);
+        CoUninitialize();
+    });
 }
 
 #[cfg(test)]

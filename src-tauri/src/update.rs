@@ -14,7 +14,10 @@ fn update_once(app: &AppHandle) -> tauri_plugin_updater::Result<()> {
     while crate::launchpad_visible(app) {
         sleep(BUSY_RETRY);
     }
-    update.install(bytes)
+    crate::dock::shutdown();
+    let result = update.install(bytes);
+    crate::apply_stored(app);
+    result
 }
 
 pub fn watch(app: AppHandle) {

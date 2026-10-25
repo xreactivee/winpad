@@ -1,6 +1,6 @@
 # winpad
 
-A macOS Launchpad style Start menu for Windows
+A macOS Launchpad style Start menu for Windows, with an optional dock that can take the taskbar's place
 
 ## Features
 - Replaces or supplements the Windows Start menu with a full-screen macOS Launchpad interface
@@ -8,6 +8,7 @@ A macOS Launchpad style Start menu for Windows
 - Customizes behavior and settings via a dedicated settings window with local store persistence
 - Intercepts and masks Windows key events via low-level keyboard hooks
 - Watches system wallpaper and supports window management integration
+- Optional dock on the screen edge (Settings → Taskbar): pinned apps and open windows, 29 live items including quick settings and a notification centre, iCal calendars, automations and Screen Time, while the Windows taskbar is auto-hidden, hidden or left alone and always restored afterwards
 
 ## Tech Stack
 - TypeScript

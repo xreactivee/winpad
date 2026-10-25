@@ -25,6 +25,20 @@
         "focus": false
       },
       {
+        "label": "dock",
+        "title": "WinPad Dock",
+        "url": "index.html",
+        "visible": false,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "focus": false,
+        "focusable": false
+      },
+      {
         "label": "settings",
         "title": "WinPad Settings",
         "url": "index.html",
@@ -64,7 +78,8 @@
     ],
     "windows": {
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "installerHooks": "./windows/hooks.nsh"
       }
     }
   },

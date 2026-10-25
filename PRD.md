@@ -2,7 +2,9 @@
 
 ## Summary
 
-WinPad replaces the Windows 11 Start menu with a macOS-style Launchpad. Pressing the Win key or clicking the taskbar's Start button opens one of three views: a full-screen, blurred-wallpaper overlay with an icon grid, icon-sized folders and widgets; a full-screen App Library of category folders; or a compact floating "Applications" window. Nothing else about Windows changes: the taskbar, desktop and system tray stay as they are.
+WinPad replaces the Windows 11 Start menu with a macOS-style Launchpad. Pressing the Win key or clicking the taskbar's Start button opens one of three views: a full-screen, blurred-wallpaper overlay with an icon grid, icon-sized folders and widgets; a full-screen App Library of category folders; or a compact floating "Applications" window.
+
+Since 1.0.0 WinPad can also customize the taskbar: an optional dock on the bottom or top edge holds Start, pinned apps, open windows and live items, while the Windows taskbar is auto-hidden, hidden or left alone. The feature is modeled on lumabar (lumabar.xyz), a paid smart dock; WinPad takes its ideas, not its code. It is off by default, so out of the box nothing about the taskbar, desktop or system tray changes.
 
 The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid glass" look and a dotted particle orb in the top-right corner.
 
@@ -22,10 +24,10 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 
 ## Non-goals
 
-- No dock, menu bar or desktop widgets. These existed in the earlier "WidOS" prototype and were removed on purpose.
-- No changes to the taskbar, notification area or Windows theme.
-- No cloud sync and no accounts. All data stays local.
-- Multi-monitor placement: v1 opens on the primary monitor only.
+- No menu bar app or desktop widget layer. These existed in the earlier "WidOS" prototype and were removed on purpose. The 1.0 dock is the one exception, and it is opt-in.
+- No permanent changes to the taskbar or notification area. The dock only changes the taskbar while it runs, and Windows gets it back as it was. The theme changes only through the opt-in Dark mode toggle and Sunset dark mode.
+- No cloud sync and no accounts. All data stays local. The dock connects to nothing that needs a key or a sign-in: no revenue, social or mail integrations.
+- Multi-monitor placement: Launchpad and the dock use the primary monitor only.
 
 ## Functional requirements
 
@@ -187,9 +189,36 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 
   All of them except the ring tilt in 3D while dragged.
 
+### Taskbar (dock)
+
+- **Switch.** Settings → Taskbar → Use the WinPad dock. Off by default.
+- **Windows taskbar.** While the dock is on: Auto-hide (default; the taskbar and its notification area slide up when the pointer reaches the edge), Hidden (never shown) or Visible (the dock sits next to it). It is restored when the dock is turned off, when WinPad quits or updates, after a crash (a watchdog process and a marker file), at the next start and on uninstall.
+- **Placement.** Bottom or top edge of the primary monitor, floating (centered) or full width, sizes S, M and L (44, 54 and 64 px bars). Maximized windows make room for it (AppBar), except when the dock auto-hides. It hides itself while an app is full screen.
+- **Behavior.** Optional auto-hide (slides away, returns when the pointer touches the edge), Lock (no dragging) and names on hover. When the items no longer fit, the dock turns compact: the apps shrink first, then captions give way to icons. Unlocked items can be dragged along the dock. Right-click: remove an item, Add Item…, Lock Dock, Dock Settings….
+- **Looks.** Glass, Liquid Glass, iOS Glass, Midnight, Black, White and Clear, nine accent colors.
+- **Items** (added from a gallery in Settings, any order):
+
+  | Group | Items |
+  |---|---|
+  | Taskbar | Quick Settings, Notifications |
+  | Apps & Files | Start (opens WinPad), Apps (pinned apps and open windows), Search (WinPad with search focused), Downloads, Screenshots, Recycle Bin |
+  | Time & Calendar | Clock, Date, Next Event, Day / Month / Year Progress, Weather; clocks and dates open a month calendar with events |
+  | System | Quick Toggles (Wi-Fi, Bluetooth, dark mode, keep awake), Volume (scroll to change), Keyboard Language, Battery, CPU & Memory, Network, Storage |
+  | Media | Now Playing |
+  | Focus | Pomodoro (25/5), Timer, Stopwatch with laps |
+  | Insights | Screen Time, Claude usage, ChatGPT (Codex) usage |
+
+- **Apps.** Taskbar pins are imported once; Launchpad's app menu adds Pin to Dock / Unpin from Dock. A click starts a pinned app, switches to its window, minimizes it when it is already in front, or lists its windows when it has several. Middle-click opens a new window. The menu has Open / New Window, Pin or Unpin, Show in Explorer, Close Window(s) and End Task.
+- **Quick Settings.** A panel like the one the taskbar opens: Wi-Fi (with the network name), Bluetooth, airplane mode, accessibility, dark mode, keep awake, battery saver and sound, a volume slider, the battery level and a button for all settings. The chevrons open the matching Windows Settings page.
+- **Notifications.** A notification centre: every app's notifications grouped by app, newest first, dismissed one at a time or all at once, with the quiet-hours switch and a focus session starter beside today's date. Clicking one opens the app it came from. Windows asks for permission once, under Privacy → Notifications.
+- **Windows banners.** An optional switch turns off "Show notification banners" for every app, so toasts stop popping up in the corner and the dock's notification centre is the only place they appear. Notifications still arrive. Apps that register later are covered within a minute, and every app's original choice is put back when the dock is off or WinPad quits.
+- **Calendars.** Secret iCal links (Google, Outlook, iCloud; https or webcal), read every 15 minutes, read-only. Recurring events, exceptions and time zones are expanded locally.
+- **Automations,** each one switch: Meeting mode (reminder and paused music 5 minutes before an event), AI limit alerts (Codex limit at 90% or more), Health alerts (battery at 15% or less, storage under 5% free), Focus music (a Pomodoro focus round starts the music), Sunset dark mode (dark at sunset, light at sunrise, for the weather city). Quiet hours silence the reminders.
+- **Screen Time.** Opt-in. Every 5 seconds the app in front is counted unless the PC has been idle for 2 minutes; days, hours and apps are kept for 8 days on this PC.
+
 ### Context menus
 
-- **App:** Open, Show in Explorer, Change Category, Remove from Folder (inside folders), Lock or Unlock, Hide or Unhide, Uninstall (opens Windows Settings), Edit.
+- **App:** Open, Show in Explorer, Pin to Dock or Unpin from Dock (while the dock is on), Change Category, Remove from Folder (inside folders), Lock or Unlock, Hide or Unhide, Uninstall (opens Windows Settings), Edit.
 - **Folder:** Open, Lock or Unlock, Ungroup Folder, Edit.
 - **Subfolder:** Open, Remove from Folder, Ungroup Folder.
 - **Widget:** Edit Widget, Size, Lock or Unlock, Remove Widget, Add Widget, Edit.
@@ -207,6 +236,7 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
   - liquid glass refraction (off by default; heavy on the CPU);
   - 24-hour clocks;
   - reset layout.
+- **Taskbar:** the dock switch and the Windows taskbar mode; position (two miniature previews), width, size, auto-hide, lock, names on hover; style (seven previews), accent color, 24-hour time; items (drag to reorder, remove, Add Item… gallery); pinned apps (drag to reorder, remove, Import Taskbar Pins); calendars (add an iCal link, with a live event count or error); automations and quiet hours; Screen Time switch and Clear.
 - **Widgets:** cards with a live preview; enable or disable, edit, delete, add.
 - **Weather:** a live forecast preview, default city and unit.
 - **About:** logo, version, credits and Quit.
@@ -220,16 +250,21 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
   - Native commands never block the UI thread.
   - The orb is capped at 30 fps.
 - **Startup:** the WinPad window is created hidden at login and shown on demand, so opening is instant.
-- **Robustness:** a crash must never leave Windows unusable. WinPad does not hide or modify the taskbar.
+- **Robustness:** a crash must never leave Windows unusable. WinPad changes the taskbar only while the dock is on, and every way out (off, quit, update, crash, next start, uninstall) restores it from the saved original state.
 - **Privacy:**
   - File search reads only the local Windows Search index.
-  - The only network calls go to Open-Meteo, with the city name only, and to GitHub releases for updates.
+  - The only network calls go to Open-Meteo, with the city name only, to GitHub releases for updates, and to the iCal links the user adds.
+  - AI usage comes from Claude Code's and Codex's own log files on this PC; nothing is sent anywhere. Screen Time is opt-in and never leaves the PC.
   - The phone panel reads Phone Link's local Start-menu card, and only the phone's name, picture and status row. Contacts and calls in that card are never read into WinPad.
 - **Language:** the UI is in English. App-name matching also understands Turkish app names.
 
 ## Known limitations
 
-- Primary monitor only.
+- Primary monitor only, for Launchpad and the dock.
+- The dock has no notification area of its own: Windows keeps its tray icons, so leave the Windows taskbar on Auto-hide to reach them. The clock, Wi-Fi, sound and battery of that tray are covered by WinPad's own items.
+- Notifications need permission under Privacy → Notifications, and Windows only offers it to some builds; without it the panel explains what to turn on.
+- There are no live window thumbnails (a list of window titles instead), no brightness control and no Win+T switcher. Battery saver can be read but only Windows can switch it, so that pill opens Settings.
+- Claude usage is a local token count (no plan percentage, since Claude Code does not log one); ChatGPT usage needs the Codex CLI. iCal time zones that are not IANA names (some Outlook feeds) fall back to local time.
 - When an elevated (administrator) window has focus, the low-level keyboard hook cannot see the Win key, so Windows' Start opens instead (UIPI).
 - Start and search button clicks are recognized through the taskbar's UI Automation elements `StartButton` and `SearchButton`, primary taskbar only. The search box style of the taskbar search is untested. If that lookup fails, the fallback watches Windows' own processes (`StartMenuExperienceHost.exe` / `SearchHost.exe`) and shows a brief flash of Windows' menu. A future Windows redesign may require an update.
 

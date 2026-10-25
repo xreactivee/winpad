@@ -3,19 +3,19 @@ import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, Cl
 import { DEFAULT_SETTINGS, useSettings } from "../lib/settings";
 import type { WidgetProps } from "./shared";
 
-type Forecast = {
+export type Forecast = {
   city: string;
   temp: number;
   code: number;
   day: boolean;
   hourly: { time: string; temp: number; code: number }[];
-  daily: { date: string; code: number; max: number; min: number }[];
+  daily: { date: string; code: number; max: number; min: number; sunrise?: number; sunset?: number }[];
 };
 
 const TTL = 15 * 60_000;
 const mem = new Map<string, { at: number; data: Forecast }>();
 
-function describe(code: number, day = true): { label: string; Icon: IconComponent; sky: string } {
+export function describe(code: number, day = true): { label: string; Icon: IconComponent; sky: string } {
   if (code === 0) return { label: "Clear", Icon: day ? Sun : Moon, sky: day ? "#2f7bd8,#7cb8f2" : "#0b1a3a,#29406e" };
   if (code <= 2) return { label: "Partly cloudy", Icon: day ? CloudSun : Moon, sky: day ? "#3b7fc4,#9cbfe0" : "#121c33,#34476b" };
   if (code === 3) return { label: "Overcast", Icon: Cloud, sky: "#55606e,#8c97a5" };
@@ -27,7 +27,7 @@ function describe(code: number, day = true): { label: string; Icon: IconComponen
   return { label: "—", Icon: Cloud, sky: "#4a5868,#7f8d9d" };
 }
 
-async function fetchForecast(city: string, unit: "c" | "f"): Promise<Forecast> {
+export async function fetchForecast(city: string, unit: "c" | "f"): Promise<Forecast> {
   const key = `${city}|${unit}`;
   const hit = mem.get(key) ?? (() => {
     try {
@@ -45,12 +45,13 @@ async function fetchForecast(city: string, unit: "c" | "f"): Promise<Forecast> {
     longitude: place.longitude,
     current: "temperature_2m,weather_code,is_day",
     hourly: "temperature_2m,weather_code",
-    daily: "weather_code,temperature_2m_max,temperature_2m_min",
+    daily: "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset",
     timezone: "auto",
     forecast_days: "7",
     temperature_unit: unit === "f" ? "fahrenheit" : "celsius",
   });
   const f = await fetch(`https://api.open-meteo.com/v1/forecast?${q}`).then((r) => r.json());
+  const utc = (iso: string) => Date.parse(`${iso}Z`) - f.utc_offset_seconds * 1000;
   const nowIso = f.current.time.slice(0, 13);
   const start = Math.max(0, f.hourly.time.findIndex((t: string) => t.slice(0, 13) === nowIso));
   const data: Forecast = {
@@ -68,6 +69,8 @@ async function fetchForecast(city: string, unit: "c" | "f"): Promise<Forecast> {
       code: f.daily.weather_code[i],
       max: Math.round(f.daily.temperature_2m_max[i]),
       min: Math.round(f.daily.temperature_2m_min[i]),
+      sunrise: utc(f.daily.sunrise[i]),
+      sunset: utc(f.daily.sunset[i]),
     })),
   };
   const entry = { at: Date.now(), data };

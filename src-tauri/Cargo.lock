@@ -5273,7 +5273,7 @@ dependencies = [
 
 [[package]]
 name = "winpad"
-version = "0.3.0"
+version = "1.0.0"
 dependencies = [
  "png 0.18.1",
  "serde",

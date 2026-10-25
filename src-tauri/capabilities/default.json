@@ -4,7 +4,8 @@
   "description": "WinPad windows",
   "windows": [
     "launchpad",
-    "settings"
+    "settings",
+    "dock"
   ],
   "permissions": [
     "core:default",

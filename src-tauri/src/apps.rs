@@ -32,7 +32,7 @@ pub struct App {
     icon: Option<String>,
 }
 
-unsafe fn take_pwstr(p: PWSTR) -> String {
+pub unsafe fn take_pwstr(p: PWSTR) -> String {
     let s = p.to_string().unwrap_or_default();
     CoTaskMemFree(Some(p.0 as _));
     s

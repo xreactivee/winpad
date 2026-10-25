@@ -4,7 +4,7 @@ import { formatDuration } from "../lib/time";
 import { Ring } from "./Ring";
 import type { WidgetProps } from "./shared";
 
-function beep() {
+export function beep() {
   const ctx = new AudioContext();
   [0, 0.35, 0.7].forEach((t) => {
     const o = ctx.createOscillator();

@@ -1,4 +1,4 @@
-use crate::shell::{cache_dir, cache_latest, com, hash_hex};
+use crate::shell::{cache_dir, cache_latest, com, hash_hex, read_stream};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use std::time::Instant;
@@ -7,7 +7,6 @@ use windows::Media::Control::{
     GlobalSystemMediaTransportControlsSessionManager as MediaManager,
     GlobalSystemMediaTransportControlsSessionPlaybackStatus as PlaybackStatus,
 };
-use windows::Storage::Streams::{DataReader, IRandomAccessStreamReference};
 use windows::Win32::System::Power::{GetSystemPowerStatus, SYSTEM_POWER_STATUS};
 
 #[derive(Serialize)]
@@ -26,7 +25,7 @@ pub fn battery() -> Option<Battery> {
     Some(Battery { percent: s.BatteryLifePercent, charging: s.ACLineStatus == 1 })
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Stats {
     cpu: f32,
@@ -43,6 +42,8 @@ struct Probe {
     nets: sysinfo::Networks,
     disks: sysinfo::Disks,
     disks_at: Instant,
+    at: Instant,
+    last: Option<Stats>,
 }
 
 static PROBE: Mutex<Option<Probe>> = Mutex::new(None);
@@ -55,7 +56,14 @@ pub fn sys_stats() -> Stats {
         nets: sysinfo::Networks::new_with_refreshed_list(),
         disks: sysinfo::Disks::new_with_refreshed_list(),
         disks_at: Instant::now(),
+        at: Instant::now(),
+        last: None,
     });
+    if let Some(last) = p.last.as_ref().filter(|_| p.at.elapsed().as_millis() < 1000) {
+        return last.clone();
+    }
+    let secs = p.at.elapsed().as_secs_f64().max(0.001);
+    p.at = Instant::now();
     p.sys.refresh_cpu_usage();
     p.sys.refresh_memory();
     p.nets.refresh(true);
@@ -68,15 +76,17 @@ pub fn sys_stats() -> Stats {
         .disks
         .iter()
         .fold((0, 0), |(u, t), d| (u + d.total_space() - d.available_space(), t + d.total_space()));
-    Stats {
+    let stats = Stats {
         cpu: p.sys.global_cpu_usage(),
         mem_used: p.sys.used_memory(),
         mem_total: p.sys.total_memory(),
         disk_used,
         disk_total,
-        net_rx,
-        net_tx,
-    }
+        net_rx: (net_rx as f64 / secs) as u64,
+        net_tx: (net_tx as f64 / secs) as u64,
+    };
+    p.last = Some(stats.clone());
+    stats
 }
 
 #[derive(Serialize)]
@@ -93,16 +103,6 @@ pub enum MediaAction {
     Previous,
     Next,
     Toggle,
-}
-
-fn read_stream(r: &IRandomAccessStreamReference) -> windows::core::Result<Vec<u8>> {
-    let s = r.OpenReadAsync()?.join()?;
-    let size = s.Size()? as u32;
-    let reader = DataReader::CreateDataReader(&s.GetInputStreamAt(0)?)?;
-    reader.LoadAsync(size)?.join()?;
-    let mut buf = vec![0u8; size as usize];
-    reader.ReadBytes(&mut buf)?;
-    Ok(buf)
 }
 
 #[tauri::command]

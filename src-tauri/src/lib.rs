@@ -1,16 +1,24 @@
 mod account;
+mod ai;
 mod apps;
+mod calendar;
+mod controls;
+mod dock;
 mod files;
 mod keyboard;
+mod notifications;
 mod phone;
 mod power;
+mod screentime;
 mod shell;
 mod startbutton;
 mod system;
+mod taskbar;
+mod tasks;
 mod update;
 
 use serde::Deserialize;
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, RunEvent, WebviewWindow};
 use tauri_plugin_store::StoreExt;
 
 const STORE_FILE: &str = "winpad.json";
@@ -19,12 +27,48 @@ const STORE_FILE: &str = "winpad.json";
 #[serde(default, rename_all = "camelCase")]
 struct ShellSettings {
     win_key: bool,
+    dock: bool,
+    dock_taskbar: taskbar::Mode,
+    dock_edge: dock::Edge,
+    dock_size: dock::Size,
+    dock_auto_hide: bool,
+    suppress_toasts: bool,
+    screen_time: bool,
 }
 
 impl Default for ShellSettings {
     fn default() -> Self {
-        Self { win_key: true }
+        Self {
+            win_key: true,
+            dock: false,
+            dock_taskbar: taskbar::Mode::default(),
+            dock_edge: dock::Edge::default(),
+            dock_size: dock::Size::default(),
+            dock_auto_hide: false,
+            suppress_toasts: false,
+            screen_time: false,
+        }
     }
+}
+
+fn apply(app: &AppHandle, s: &ShellSettings) {
+    keyboard::set_enabled(s.win_key);
+    dock::apply(
+        app,
+        dock::Config {
+            enabled: s.dock,
+            taskbar: s.dock_taskbar,
+            edge: s.dock_edge,
+            size: s.dock_size,
+            auto_hide: s.dock_auto_hide,
+            suppress_toasts: s.suppress_toasts,
+        },
+    );
+    screentime::set_enabled(app, s.dock && s.screen_time);
+}
+
+pub fn apply_stored(app: &AppHandle) {
+    apply(app, &read_settings(app));
 }
 
 fn launchpad(app: &AppHandle) -> Option<WebviewWindow> {
@@ -67,8 +111,13 @@ pub fn refocus_launchpad(app: &AppHandle) {
 }
 
 #[tauri::command(async)]
-fn apply_settings(settings: ShellSettings) {
-    keyboard::set_enabled(settings.win_key);
+fn apply_settings(app: AppHandle, settings: ShellSettings) {
+    apply(&app, &settings);
+}
+
+#[tauri::command(async)]
+fn launchpad_toggle(search: bool) {
+    keyboard::open_launchpad(search);
 }
 
 #[tauri::command(async)]
@@ -77,11 +126,14 @@ fn mask_win() {
 }
 
 #[tauri::command(async)]
-fn open_settings(app: AppHandle) {
+fn open_settings(app: AppHandle, section: Option<String>) {
     if let Some(w) = app.get_webview_window("settings") {
         let _ = w.show();
         let _ = w.unminimize();
         shell::focus(&w);
+        if let Some(section) = section {
+            let _ = w.emit("settings-section", section);
+        }
     }
 }
 
@@ -98,17 +150,21 @@ fn read_settings(app: &AppHandle) -> ShellSettings {
         .unwrap_or_default()
 }
 
+pub fn cli() -> bool {
+    taskbar::cli()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| open_settings(app.clone())))
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| open_settings(app.clone(), None)))
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let handle = app.handle().clone();
-            keyboard::set_enabled(read_settings(&handle).win_key);
+            apply_stored(&handle);
             keyboard::start(handle.clone());
             shell::watch_wallpaper(handle.clone());
             update::watch(handle);
@@ -122,6 +178,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             apply_settings,
+            launchpad_toggle,
             mask_win,
             open_settings,
             quit_app,
@@ -140,7 +197,38 @@ pub fn run() {
             system::media_info,
             system::media_control,
             shell::get_wallpaper,
+            dock::dock_region,
+            dock::dock_popover,
+            tasks::list_windows,
+            tasks::window_action,
+            tasks::taskbar_pins,
+            controls::volume,
+            controls::set_volume,
+            controls::radios,
+            controls::set_radio,
+            controls::theme,
+            controls::set_theme,
+            controls::keep_awake,
+            controls::set_keep_awake,
+            controls::keyboard_layouts,
+            controls::set_keyboard_layout,
+            files::recent_files,
+            files::recycle_bin,
+            files::empty_recycle_bin,
+            screentime::screen_time,
+            screentime::clear_screen_time,
+            ai::ai_usage,
+            calendar::fetch_calendar,
+            controls::quick_info,
+            controls::set_airplane_mode,
+            notifications::notifications,
+            notifications::dismiss_notification,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running WinPad");
+        .build(tauri::generate_context!())
+        .expect("error while building WinPad")
+        .run(|_, event| {
+            if let RunEvent::Exit = event {
+                dock::shutdown();
+            }
+        });
 }

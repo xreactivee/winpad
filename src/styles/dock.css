@@ -1,0 +1,461 @@
+.dock-root {
+  position: fixed;
+  inset: 0;
+  color: var(--dock-fg);
+  --dock-fg: #fff;
+  --dock-fg-2: rgba(255, 255, 255, 0.7);
+  --dock-fg-3: rgba(255, 255, 255, 0.5);
+  --dock-hover: rgba(255, 255, 255, 0.12);
+  --dock-active: rgba(255, 255, 255, 0.2);
+}
+
+.dock-root[data-style="white"] {
+  --dock-fg: #1c1c1e;
+  --dock-fg-2: rgba(0, 0, 0, 0.6);
+  --dock-fg-3: rgba(0, 0, 0, 0.45);
+  --dock-hover: rgba(0, 0, 0, 0.07);
+  --dock-active: rgba(0, 0, 0, 0.12);
+}
+
+.dock-row {
+  position: fixed;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.dock-row[data-width="full"] {
+  left: 8px;
+  right: 8px;
+}
+
+.dock-bar {
+  position: relative;
+  max-width: calc(100vw - 16px);
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 0 5px;
+  pointer-events: auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.dock-row[data-width="full"] .dock-bar {
+  flex: 1;
+}
+
+.dock-row[data-width="full"] .dock-slot[data-type="apps"] {
+  justify-content: center;
+}
+
+.dock-root[data-edge="bottom"] .dock-bar[data-hidden] {
+  transform: translateY(calc(100% + 12px));
+}
+
+.dock-root[data-edge="top"] .dock-bar[data-hidden] {
+  transform: translateY(calc(-100% - 12px));
+}
+
+.dock-surface {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-color: rgba(28, 28, 32, 0.55);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.dock-root[data-style="liquid"] .dock-surface {
+  filter: url(#liquid-dock) saturate(140%);
+}
+
+.dock-root[data-style="midnight"] .dock-surface {
+  background: rgba(14, 17, 34, 0.9);
+}
+
+.dock-root[data-style="black"] .dock-surface {
+  background: rgba(6, 6, 8, 0.95);
+}
+
+.dock-root[data-style="white"] .dock-surface {
+  background: rgba(246, 246, 248, 0.95);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+    0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.dock-root[data-style="clear"] .dock-surface {
+  display: none;
+}
+
+.dock-root[data-style="clear"] .dock-tile {
+  background: rgba(20, 20, 24, 0.6);
+  color: #fff;
+}
+
+.dock-slot {
+  display: flex;
+  align-items: center;
+  flex: none;
+  min-width: 0;
+}
+
+.dock-slot[data-type="apps"] {
+  flex: 1 1 auto;
+  min-width: calc(var(--tile) * 2);
+  overflow: hidden;
+}
+
+.dock-reveal {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 6px;
+  pointer-events: auto;
+}
+
+.dock-slot[data-dragging] {
+  position: relative;
+  z-index: 2;
+  opacity: 0.85;
+}
+
+.dock-apps {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.dock-apps::-webkit-scrollbar {
+  display: none;
+}
+
+.dock-tile {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--tile);
+  min-width: var(--tile);
+  padding: 0 10px;
+  border-radius: calc(var(--tile) * 0.28);
+  color: var(--dock-fg);
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.dock-tile:hover {
+  background: var(--dock-hover);
+}
+
+.dock-tile[aria-pressed="true"] {
+  background: var(--dock-active);
+}
+
+.dock-dot {
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--dock-fg-2);
+  transition: width 0.2s, margin 0.2s;
+}
+
+.dock-tile[aria-pressed="true"] .dock-dot {
+  width: 14px;
+  margin-left: -7px;
+  background: var(--accent);
+}
+
+.dock-toggle {
+  display: grid;
+  place-items: center;
+  width: calc(var(--tile) * 0.78);
+  height: calc(var(--tile) * 0.78);
+  border-radius: 50%;
+  background: var(--dock-hover);
+  color: var(--dock-fg);
+  cursor: default;
+}
+
+.dock-toggle[aria-pressed="true"] {
+  background: var(--accent);
+  color: #fff;
+}
+
+.dock-meter {
+  display: block;
+  width: 64px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(127, 127, 127, 0.35);
+  overflow: hidden;
+}
+
+.dock-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.dock-pop {
+  position: fixed;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow: auto;
+  color: var(--text);
+  --r: 22px;
+  animation: pop-in 0.2s ease-out;
+}
+
+.dock-root[data-edge="bottom"] .dock-pop {
+  transform-origin: 50% 100%;
+}
+
+.dock-root[data-edge="top"] .dock-pop {
+  transform-origin: 50% 0;
+}
+
+.dock-toasts {
+  position: fixed;
+  z-index: 11;
+  display: grid;
+  gap: 8px;
+  width: 340px;
+  color: var(--text);
+}
+
+.dock-toast {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  --r: 16px;
+  animation: pop-in 0.25s ease-out;
+}
+
+.dock-label {
+  position: fixed;
+  z-index: 12;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(30, 30, 34, 0.94);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: fade-in 0.12s;
+}
+
+.dock-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.qs {
+  display: grid;
+  gap: 14px;
+}
+
+.qs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.qs-pill {
+  display: flex;
+  align-items: stretch;
+  border-radius: 10px;
+  background: var(--fill);
+  overflow: hidden;
+}
+
+.qs-pill[data-on] {
+  background: var(--accent);
+}
+
+.qs-pill-main {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  padding: 9px 10px;
+  text-align: left;
+}
+
+.qs-pill-arrow {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.qs-pill-main:hover,
+.qs-pill-arrow:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.qs-pill-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.qs-pill-text {
+  display: grid;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.qs-pill-hint {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+.qs-slider,
+.qs-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.qs-footer {
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid var(--sep);
+}
+
+.nc {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+.nc-head,
+.nc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nc-foot {
+  padding-top: 10px;
+  border-top: 1px solid var(--sep);
+  font-size: 12.5px;
+}
+
+.nc-list {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 0;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+
+.nc-group {
+  display: grid;
+  gap: 4px;
+}
+
+.nc-app {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.nc-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 8px 10px 12px;
+  border-radius: 12px;
+  background: var(--fill);
+  font-size: 13px;
+}
+
+.nc-body {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: pre-wrap;
+}
+
+.nc-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--text-3);
+}
+
+.dock-root[data-compact] .dock-bar {
+  gap: 0;
+}
+
+.dock-root[data-compact] .dock-tile {
+  padding-left: 5px;
+  padding-right: 5px;
+  gap: 4px;
+}
+
+.dock-root[data-compact] .dock-sub {
+  display: none;
+}
+
+.nc-open {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.nc-item[data-leaving] {
+  animation: nc-out 0.18s ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes nc-out {
+  to {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}

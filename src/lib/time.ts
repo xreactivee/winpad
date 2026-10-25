@@ -34,6 +34,25 @@ export function daysUntil(dateIso: string, now: Date) {
   return Math.round((target.getTime() - today.getTime()) / 86_400_000);
 }
 
+export function progress(now: Date, unit: "day" | "month" | "year") {
+  const [y, m, d] = [now.getFullYear(), now.getMonth(), now.getDate()];
+  const [start, end] =
+    unit === "day" ? [new Date(y, m, d), new Date(y, m, d + 1)] : unit === "month" ? [new Date(y, m, 1), new Date(y, m + 1, 1)] : [new Date(y, 0, 1), new Date(y + 1, 0, 1)];
+  return (now.getTime() - start.getTime()) / (end.getTime() - start.getTime());
+}
+
+export const clockText = (date: Date, clock24: boolean) =>
+  `${displayHour(date.getHours(), clock24)}:${pad(date.getMinutes())}${clock24 ? "" : date.getHours() < 12 ? " AM" : " PM"}`;
+
+export function shortDuration(ms: number) {
+  const minutes = Math.floor(Math.max(0, ms) / 60_000);
+  if (minutes < 1) return "<1m";
+  const [d, h, m] = [Math.floor(minutes / 1440), Math.floor((minutes % 1440) / 60), minutes % 60];
+  if (d) return h ? `${d}d ${h}h` : `${d}d`;
+  if (h) return m ? `${h}h ${m}m` : `${h}h`;
+  return `${m}m`;
+}
+
 export function formatDuration(ms: number, tenths = false) {
   const s = Math.max(0, ms) / 1000;
   const h = Math.floor(s / 3600);

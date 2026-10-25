@@ -10,7 +10,8 @@ use windows::Win32::UI::Accessibility::{
     CUIAutomation, IUIAutomation, IUIAutomationElement, TreeScope_Descendants, UIA_AutomationIdPropertyId,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    FindWindowExW, FindWindowW, GetWindowRect, LLMHF_INJECTED, MSLLHOOKSTRUCT, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE,
+    FindWindowExW, FindWindowW, GetWindowRect, IsWindowVisible, LLMHF_INJECTED, MSLLHOOKSTRUCT, WM_LBUTTONDOWN,
+    WM_LBUTTONUP, WM_MOUSEMOVE,
 };
 
 struct Rects {
@@ -54,6 +55,9 @@ pub unsafe fn on_mouse(wparam: WPARAM, lparam: LPARAM) -> Option<LRESULT> {
         }
         return None;
     }
+    if crate::dock::contains(m.pt) {
+        return None;
+    }
     let fresh = r.at.elapsed() < Duration::from_secs(5);
     let real = m.flags & LLMHF_INJECTED == 0 || crate::keyboard::accept_injected();
     let hit = |b: Option<RECT>| b.is_some_and(|b| inside(&b, m.pt));
@@ -91,7 +95,8 @@ pub fn start() {
                     .ok()
                     .filter(|r| r.right > r.left && r.bottom > r.top)
             };
-            let (start, search) = (rect(&start_id), rect(&search_id));
+            let (start, search) =
+                if IsWindowVisible(tray).as_bool() { (rect(&start_id), rect(&search_id)) } else { (None, None) };
             *RECTS.lock().unwrap_or_else(|e| e.into_inner()) = Some(Rects { near, start, search, at: Instant::now() });
         }
     });

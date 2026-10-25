@@ -10,10 +10,22 @@ type Anchor = { clientX: number; clientY: number; preventDefault?: () => void };
 type Open = { x: number; y: number; items: MenuItem[]; alignRight: boolean } | null;
 
 let setOpenGlobal: (open: Open) => void = () => {};
+const openListeners = new Set<(open: boolean) => void>();
 
 export function openMenu(at: Anchor, items: MenuItem[], alignRight = false) {
   at.preventDefault?.();
   setOpenGlobal({ x: at.clientX, y: at.clientY, items, alignRight });
+}
+
+export const closeMenu = () => setOpenGlobal(null);
+
+export function useMenuOpen() {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    openListeners.add(setOpen);
+    return () => void openListeners.delete(setOpen);
+  }, []);
+  return open;
 }
 
 export function ContextMenuHost() {
@@ -21,6 +33,10 @@ export function ContextMenuHost() {
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const ref = useRef<HTMLDivElement>(null);
   setOpenGlobal = setOpen;
+
+  useEffect(() => {
+    for (const notify of openListeners) notify(!!open);
+  }, [open]);
 
   useLayoutEffect(() => {
     if (!open || !ref.current) return;

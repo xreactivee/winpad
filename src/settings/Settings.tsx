@@ -1,9 +1,9 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { CloudSun, Grid, InfoCircle, Minus, Pen, Puzzle, Sliders, Stop, Trash2, X, type IconComponent } from "reicon-react";
+import { useEffect, useState, type CSSProperties } from "react";
+import { CloudSun, Grid, InfoCircle, Minus, Monitor, Pen, Puzzle, Sliders, Stop, Trash2, X, type IconComponent } from "reicon-react";
 import { version } from "../../package.json";
-import { api, currentWindow } from "../lib/api";
+import { api, currentWindow, listen } from "../lib/api";
 import { useApps } from "../lib/apps";
-import { DEFAULT_SETTINGS, useSetting, type HomeView, type IconStyle, type PhonePanelMode, type Settings as SettingsShape } from "../lib/settings";
+import { DEFAULT_SETTINGS, useSetting, type HomeView, type IconStyle, type PhonePanelMode } from "../lib/settings";
 import { useStored } from "../lib/store";
 import { useWallpaper } from "../lib/wallpaper";
 import { AppIcon } from "../components/AppIcon";
@@ -14,12 +14,15 @@ import { WidgetEditor } from "../widgets/WidgetEditor";
 import { WidgetFrame } from "../widgets/WidgetFrame";
 import { WidgetGallery } from "../widgets/WidgetGallery";
 import { BASE, SIZE_LABEL, newWidget, useWidgets, widgetDef, withoutWidget, type WidgetInstance } from "../widgets/registry";
+import { Card, Picker, Row, ToggleRow, tiles, type PickerOption } from "./parts";
+import { TaskbarPane } from "./TaskbarPane";
 
-type Section = { key: "general" | "launchpad" | "widgets" | "weather" | "about"; name: string; lede: string; icon: IconComponent };
+type Section = { key: "general" | "launchpad" | "taskbar" | "widgets" | "weather" | "about"; name: string; lede: string; icon: IconComponent };
 
 const SECTIONS: Section[] = [
   { key: "general", name: "General", lede: "How WinPad fits into Windows.", icon: Sliders },
   { key: "launchpad", name: "Launchpad", lede: "What opens, how it is laid out and how it looks.", icon: Grid },
+  { key: "taskbar", name: "Taskbar", lede: "A dock with live widgets in place of the Windows taskbar.", icon: Monitor },
   { key: "widgets", name: "Widgets", lede: "Glanceable widgets on the first page of Launchpad.", icon: Puzzle },
   { key: "weather", name: "Weather", lede: "Location and units for weather widgets.", icon: CloudSun },
   { key: "about", name: "About", lede: "", icon: InfoCircle },
@@ -29,6 +32,7 @@ export function Settings() {
   const [section, setSection] = useState<Section["key"]>("general");
   const current = SECTIONS.find((s) => s.key === section)!;
   const { blurred } = useWallpaper();
+  useEffect(() => listen<string>("settings-section", (key) => SECTIONS.some((s) => s.key === key) && setSection(key as Section["key"])), []);
   return (
     <div className="settings" style={blurred ? ({ "--wallpaper": `url("${blurred}")` } as CSSProperties) : undefined}>
       <Backdrop dim={0.52} />
@@ -62,6 +66,7 @@ export function Settings() {
           )}
           {section === "general" && <GeneralPane />}
           {section === "launchpad" && <LaunchpadPane />}
+          {section === "taskbar" && <TaskbarPane />}
           {section === "widgets" && <WidgetsPane />}
           {section === "weather" && <WeatherPane />}
           {section === "about" && <AboutPane />}
@@ -86,56 +91,6 @@ function WindowControls() {
     </div>
   );
 }
-
-function Card({ title, children }: { title?: string; children: ReactNode }) {
-  return (
-    <section className="card-group">
-      {title && <h2>{title}</h2>}
-      <div className="card">{children}</div>
-    </section>
-  );
-}
-
-function Row({ label, hint, children }: { label: string; hint?: string; children?: ReactNode }) {
-  return (
-    <div className="setting-row">
-      <div className="setting-text">
-        <div className="setting-label">{label}</div>
-        {hint && <div className="setting-hint">{hint}</div>}
-      </div>
-      {children && <div className="setting-control">{children}</div>}
-    </div>
-  );
-}
-
-type BooleanKey = { [K in keyof SettingsShape]: SettingsShape[K] extends boolean ? K : never }[keyof SettingsShape];
-
-function ToggleRow({ setting, label, hint }: { setting: BooleanKey; label: string; hint?: string }) {
-  const [value, setValue] = useSetting(setting);
-  return (
-    <Row label={label} hint={hint}>
-      <Switch value={value} onChange={setValue} label={label} />
-    </Row>
-  );
-}
-
-type PickerOption<T extends string> = { value: T; label: string; hint: string; art: ReactNode };
-
-function Picker<T extends string>({ value, options, onChange }: { value: T; options: PickerOption<T>[]; onChange: (v: T) => void }) {
-  return (
-    <div className="picker" role="radiogroup" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
-      {options.map((o) => (
-        <button key={o.value} role="radio" aria-checked={o.value === value} className="picker-option" onClick={() => onChange(o.value)}>
-          <div className="picker-art">{o.art}</div>
-          <div className="picker-label">{o.label}</div>
-          <div className="picker-hint">{o.hint}</div>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-const tiles = (n: number) => Array.from({ length: n }, (_, i) => <i key={i} />);
 
 const HOME_VIEWS: PickerOption<HomeView>[] = [
   {

@@ -2,20 +2,16 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 use tauri::AppHandle;
-use windows::core::PWSTR;
-use windows::Win32::Foundation::{CloseHandle, HWND, LPARAM, LRESULT, WPARAM};
+use crate::shell::{class_of, exe_of};
+use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
-use windows::Win32::System::Threading::{
-    OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
-};
 use windows::Win32::UI::Accessibility::{SetWinEventHook, HWINEVENTHOOK};
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP,
     VIRTUAL_KEY, VK_ESCAPE,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    CallNextHookEx, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetMessageW, GetWindowThreadProcessId,
-    SetWindowsHookExW, TranslateMessage, EVENT_OBJECT_UNCLOAKED, EVENT_SYSTEM_FOREGROUND, KBDLLHOOKSTRUCT, LLKHF_INJECTED,
+    CallNextHookEx, DispatchMessageW, GetForegroundWindow, GetMessageW, SetWindowsHookExW, TranslateMessage, EVENT_OBJECT_UNCLOAKED, EVENT_SYSTEM_FOREGROUND, KBDLLHOOKSTRUCT, LLKHF_INJECTED,
     MSG, OBJID_WINDOW, WH_KEYBOARD_LL, WH_MOUSE_LL, WINEVENT_OUTOFCONTEXT, WM_KEYDOWN, WM_SYSKEYDOWN,
 };
 
@@ -131,6 +127,9 @@ unsafe extern "system" fn keyboard_proc(code: i32, wparam: WPARAM, lparam: LPARA
 }
 
 unsafe extern "system" fn mouse_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    if code >= 0 {
+        crate::dock::on_mouse(wparam, lparam);
+    }
     if code >= 0 && ENABLED.load(Ordering::Relaxed) {
         if let Some(r) = crate::startbutton::on_mouse(wparam, lparam) {
             return r;
@@ -196,23 +195,6 @@ fn focus_in_transit() -> bool {
     exe.is_empty() || exe.ends_with("\\startmenuexperiencehost.exe") || exe.ends_with("\\searchhost.exe")
 }
 
-unsafe fn class_of(hwnd: HWND) -> String {
-    let mut buf = [0u16; 128];
-    let n = GetClassNameW(hwnd, &mut buf);
-    String::from_utf16_lossy(&buf[..n.max(0) as usize])
-}
-
-unsafe fn exe_of(hwnd: HWND) -> String {
-    let mut pid = 0u32;
-    GetWindowThreadProcessId(hwnd, Some(&mut pid));
-    let Ok(h) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else { return String::new() };
-    let mut buf = [0u16; 1024];
-    let mut len = buf.len() as u32;
-    let ok = QueryFullProcessImageNameW(h, PROCESS_NAME_WIN32, PWSTR(buf.as_mut_ptr()), &mut len).is_ok();
-    let _ = CloseHandle(h);
-    if ok { String::from_utf16_lossy(&buf[..len as usize]) } else { String::new() }
-}
-
 pub fn start(app: AppHandle) {
     let _ = APP.set(app);
     if cfg!(debug_assertions) && std::env::var_os("WINPAD_TEST_INJECTED").is_some() {
@@ -234,7 +216,7 @@ pub fn start(app: AppHandle) {
     });
 }
 
-fn hook_thread(install: impl FnOnce() + Send + 'static) {
+pub(crate) fn hook_thread(install: impl FnOnce() + Send + 'static) {
     std::thread::spawn(move || unsafe {
         install();
         let mut msg = MSG::default();

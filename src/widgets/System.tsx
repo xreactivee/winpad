@@ -8,7 +8,7 @@ import type { WidgetProps } from "./shared";
 
 const INTERVAL = 2000;
 
-const rate = (bytes: number) => `${formatBytes(bytes / (INTERVAL / 1000))}/s`;
+const rate = (bytesPerSecond: number) => `${formatBytes(bytesPerSecond)}/s`;
 
 export function SystemWidget({ w }: WidgetProps) {
   const s = usePoll(api.sysStats, INTERVAL);

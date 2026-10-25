@@ -3,6 +3,7 @@ import { Plus } from "reicon-react";
 import { api, currentWindow, listen, type App, type FileHit, type PowerAction } from "../lib/api";
 import { openApp, refreshApps, useApps, useFileSearch, useHistory } from "../lib/apps";
 import { CATEGORIES, categorize, categoryName, libraryGroups } from "../lib/categories";
+import { togglePin } from "../lib/dock";
 import {
   addToFolder,
   addWidget,
@@ -48,6 +49,7 @@ import { SIZE_LABEL, useWidgets, withoutWidget, type Options, type WidgetInstanc
 import { WidgetEditor } from "../widgets/WidgetEditor";
 import { WidgetFrame } from "../widgets/WidgetFrame";
 import { WidgetGallery } from "../widgets/WidgetGallery";
+import { useDockLayout } from "../dock/state";
 import { AccountButton } from "./AccountButton";
 import { AppLibrary, CategoryView } from "./AppLibrary";
 import { AppWindow, WINDOW_H } from "./AppWindow";
@@ -103,6 +105,7 @@ const reorderIndex = (from: Loc, page: number, index: number) => (from.page === 
 export function Launchpad() {
   const [settings] = useSettings();
   const [, setPhoneMode] = useSetting("phonePanel");
+  const [dockLayout, setDockLayout] = useDockLayout();
   const apps = useApps();
   const byId = useMemo(() => mapById(apps), [apps]);
   const wallpaper = useWallpaper();
@@ -448,6 +451,7 @@ export function Launchpad() {
     openMenu(e, [
       { label: "Open", onClick: () => launchApp(a) },
       { label: "Show in Explorer", onClick: () => api.revealApp(a.target) },
+      ...(settings.dock ? [{ label: dockLayout.pins.includes(a.id) ? "Unpin from Dock" : "Pin to Dock", onClick: () => setDockLayout((l) => togglePin(l, a.id)) }] : []),
       { label: "Change Category…", onClick: () => setCatFor(a) },
       ...(opts.folderId ? [{ label: "Remove from Folder", onClick: () => update((l) => removeFromFolder(l, opts.folderId!, a.id)) }] : []),
       ...(opts.index !== undefined ? [lockItem(opts.index)] : []),

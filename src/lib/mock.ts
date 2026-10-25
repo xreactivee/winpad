@@ -14,6 +14,51 @@ function letterIcon(name: string) {
   return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
 }
 
+const state = { wifi: true, bluetooth: false, dark: true, awake: false, volume: 0.6, muted: false, layout: 1 };
+
+const two = (n: number) => String(n).padStart(2, "0");
+const icsTime = (d: Date) => `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}T${two(d.getHours())}${two(d.getMinutes())}00`;
+
+function sampleCalendar() {
+  const at = (minutes: number) => new Date(Math.ceil(Date.now() / 300_000) * 300_000 + minutes * 60_000);
+  const event = (uid: string, title: string, start: Date, minutes: number, extra: string[] = []) => [
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `SUMMARY:${title}`,
+    `DTSTART:${icsTime(start)}`,
+    `DTEND:${icsTime(new Date(start.getTime() + minutes * 60_000))}`,
+    ...extra,
+    "END:VEVENT",
+  ];
+  return [
+    "BEGIN:VCALENDAR",
+    ...event("standup", "Standup", at(25), 15, ["RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"]),
+    ...event("review", "Design review", at(26 * 60), 60, ["LOCATION:Room 4"]),
+    ...event("lunch", "Lunch with Sam", at(3 * 24 * 60), 60),
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+function sampleScreenTime() {
+  return [6, 5, 4, 3, 2, 1, 0].map((offset) => {
+    const d = new Date(Date.now() - offset * 86_400_000);
+    const apps = { "Visual Studio Code": 9200 - offset * 600, Chrome: 7400 + offset * 300, Slack: 2600, Spotify: 1800 - offset * 100, Figma: 1500 };
+    const total = Object.values(apps).reduce((a, b) => a + b, 0);
+    const hours = Array.from({ length: 24 }, (_, h) => (h >= 9 && h <= 19 ? Math.round(total / 11) : 0));
+    return { date: `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}`, total, hours, apps };
+  });
+}
+
+const sampleWindow = (hwnd: number, title: string, appId: string, active = false, minimized = false) => ({
+  hwnd,
+  title,
+  exe: `C:\\Program Files\\${appId}\\${appId}.exe`,
+  appId,
+  icon: null,
+  active,
+  minimized,
+});
+
 export function mock(cmd: string, args?: Record<string, unknown>): unknown {
   switch (cmd) {
     case "list_apps":
@@ -47,6 +92,84 @@ export function mock(cmd: string, args?: Record<string, unknown>): unknown {
       return { updates: true };
     case "media_info":
       return { title: "Midnight City", artist: "M83", playing: true, thumb: null };
+    case "list_windows":
+      return [
+        sampleWindow(11, "winpad - Visual Studio Code", "Visual Studio Code", true),
+        sampleWindow(12, "Inbox - Chrome", "Chrome"),
+        sampleWindow(13, "Docs - Chrome", "Chrome", false, true),
+        sampleWindow(14, "Spotify Premium", "Spotify"),
+      ];
+    case "taskbar_pins":
+      return ["File Explorer", "Chrome", "Visual Studio Code", "Terminal"];
+    case "volume":
+      return { level: state.volume, muted: state.muted };
+    case "set_volume":
+      if (typeof args?.level === "number") state.volume = args.level;
+      if (typeof args?.muted === "boolean") state.muted = args.muted;
+      return null;
+    case "radios":
+      return [
+        { kind: "wifi", on: state.wifi },
+        { kind: "bluetooth", on: state.bluetooth },
+      ];
+    case "set_radio":
+      state[args?.kind === "wifi" ? "wifi" : "bluetooth"] = Boolean(args?.on);
+      return null;
+    case "theme":
+      return state.dark;
+    case "set_theme":
+      state.dark = Boolean(args?.dark);
+      return null;
+    case "keep_awake":
+      return state.awake;
+    case "set_keep_awake":
+      return (state.awake = Boolean(args?.on));
+    case "keyboard_layouts":
+      return {
+        current: state.layout,
+        list: [
+          { id: 1, code: "TR", name: "Turkish (Turkey)" },
+          { id: 2, code: "EN", name: "English (United States)" },
+        ],
+      };
+    case "set_keyboard_layout":
+      state.layout = Number(args?.id);
+      return null;
+    case "recent_files": {
+      const names = args?.folder === "screenshots" ? ["Screenshot 2026-10-24 101512.png", "Screenshot 2026-10-23 184401.png"] : ["Invoice.pdf", "winpad-setup.exe"];
+      return names.map((name, i) => ({ name, path: `C:\\Users\\Alex\\${name}`, icon: null, modified: Date.now() - i * 3_600_000 }));
+    }
+    case "recycle_bin":
+      return { items: 12, bytes: 48e6 };
+    case "screen_time":
+      return sampleScreenTime();
+    case "ai_usage":
+      return {
+        claude: { sessionTokens: 1_284_000, sessionResetsAt: Date.now() + 2.6 * 3_600_000, weekTokens: 18_400_000, topModel: "claude-opus-5-5" },
+        codex: {
+          primary: { percent: 92, minutes: 300, resetsAt: Date.now() + 9_600_000 },
+          secondary: { percent: 41, minutes: 10080, resetsAt: Date.now() + 3 * 86_400_000 },
+          at: Date.now(),
+        },
+      };
+    case "fetch_calendar":
+      return sampleCalendar();
+    case "quick_info":
+      return { airplane: !state.wifi && !state.bluetooth, batterySaver: true, ssid: state.wifi ? "TURKNET_AFECB" : null };
+    case "set_airplane_mode":
+      state.wifi = state.bluetooth = !args?.on;
+      return null;
+    case "notifications":
+      return {
+        allowed: true,
+        items: [
+          { id: 1, app: "Snipping Tool", appId: "Snipping Tool", title: "Screenshot copied", body: "Saved to the Screenshots folder", icon: null, at: Date.now() - 60_000 },
+          { id: 2, app: "Claude", appId: "Claude", title: "Taskbar customization", body: "dock/taskbar changes done", icon: null, at: Date.now() - 3_600_000 },
+          { id: 3, app: "Instagram", appId: null, title: "yuruyen_istanbul", body: "x.reactive_ via Phone Link", icon: null, at: Date.now() - 7_200_000 },
+        ],
+      };
+    case "dismiss_notification":
+      return null;
     default:
       return null;
   }

@@ -167,7 +167,34 @@ Other rules:
 | `Dots` | `components/Dots.tsx` | 8px page dots, white when active |
 | `WidgetFrame` | `widgets/WidgetFrame.tsx` | Scales a widget to its slot; glass or bare (orb, flip clock, photo fill); remove button in edit mode |
 | Controls | `components/controls.tsx` + `styles/controls.css` | `Switch`, `Segmented`, `Select`, `Slider`, `RoundButton`; classes `.btn` (`.primary`, `.danger`, `.small`), `.icon-button`, `.field`, `.chip`, `.list-item`, `.well`, `.swatch`, `.app-tile`, `.app-label`, `.ellipsis`, `.row`, `.scroll`, `kbd` |
+| Dock | `dock/Dock.tsx` + `styles/dock.css` | See "Dock" below; `Tile`, `MiniRing`, `Card` and `Stat` in `dock/Tile.tsx` |
 | Settings | `settings/Settings.tsx` + `styles/settings.css` | Sidebar with brand and nav (active item: 13% fill plus a 3px accent pill); Windows-style caption buttons (46×36, close turns `#c42b1c`); cards of rows; visual `Picker` options with miniature screens drawn over the user's wallpaper (`--wallpaper`); live grid preview; widget cards with live previews |
+
+## Dock
+
+The dock (`src/dock`, `styles/dock.css`) follows the same language, with its own variables on `.dock-root`: `--dock-fg`, `--dock-fg-2`, `--dock-fg-3`, `--dock-hover`, `--dock-active`, `--tile` (tile height) and `--accent` (the chosen accent; it overrides the global one inside the dock only).
+
+- **Sizes:** bars of 44, 54 and 64px (S, M, L; `DOCK_HEIGHT`), 8px from the screen edge (`DOCK_INSET`), corner radius `height × 0.32`. Tiles are `bar − 10` tall, radius `tile × 0.28`, 2px apart; app icons are `tile × 0.64`, rings `tile × 0.72`. Text inside tiles scales with the tile (`tile × 0.2–0.34`).
+- **Width:** Floating centers the bar on its content; Full width spans the edge with 8px margins and centers the Apps tile in the free space.
+- **Styles:**
+
+  | Style | Surface |
+  |---|---|
+  | Glass | The pre-blurred wallpaper aligned to the bar's screen position, under the `.glass` white gradient |
+  | Liquid Glass | The sharp wallpaper, aligned the same way, through the `#liquid-glass` displacement filter (static layer only) |
+  | iOS Glass | The blurred wallpaper under `rgba(26,28,44,.46)` |
+  | Midnight / Black / White | `rgba(14,17,34,.9)` / `rgba(6,6,8,.95)` / `rgba(246,246,248,.95)` with dark text |
+  | Clear | No bar; each tile gets `rgba(20,20,24,.6)` |
+
+  All but White and Clear share the `.glass` rim: an inset top highlight, a 1px white ring at 12% and `0 10px 30px rgba(0,0,0,.35)`.
+- **Accents:** `#0a84ff`, `#5e5ce6`, `#bf5af2`, `#ff375f`, `#ff453a`, `#ff9f0a`, `#ffd60a`, `#30d158`, `#64d2ff`.
+- **States:** hover fills the tile with `--dock-hover`; the app in front gets `--dock-active` and its running dot grows from 4px to a 14px accent pill. Toggles are `tile × 0.78` circles, accent-filled when on.
+- **Popovers** are `.glass.solid` cards (radius 22, padding 16), centered on their tile and kept 8px inside the screen, 10px from the bar, at most 456px tall, opening with `pop-in` from the bar's side. Toasts (radius 16, 340px wide) stack at the bar's right end, at most three, for 10s. Names on hover are 12px/500 labels on `rgba(30,30,34,.94)`, 8px from the bar.
+- **Motion:** auto-hide slides the bar off the edge with `transform` over .28s `cubic-bezier(.2,.8,.2,1)` after 700ms outside it; a dragged tile follows the pointer at 85% opacity and drops into place.
+- **Compact mode:** when the bar runs out of room, `.dock-root[data-compact]` drops tile padding to 5px, closes the gaps and hides every `.dock-sub` secondary line (the clock's date, the track title, a tile's caption).
+- **Quick Settings:** a two-column grid of `.qs-pill` buttons (radius 10, accent fill when on, an optional right-hand chevron that opens the matching Windows Settings page), then a volume row and a footer with the battery and an all-settings button.
+- **Notification centre:** a header (title, quiet-hours toggle, Clear all), a scrolling list grouped by app (12px caption, cards at radius 12 on `--fill`) and a footer with today's date and a focus starter.
+- **Settings previews:** the Taskbar page draws each position and style as a miniature screen over the wallpaper (`.mini-dock`). Item and pinned-app lists are `.drag-list` rows with a dotted `.drag-grip`; dragging reorders them live.
 
 ## Writing
 

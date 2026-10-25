@@ -3,12 +3,17 @@ use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
-use windows::Win32::Foundation::HWND;
+use windows::core::PWSTR;
+use windows::Storage::Streams::{DataReader, IRandomAccessStreamReference};
+use windows::Win32::Foundation::{CloseHandle, HWND};
 use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
-use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
+use windows::Win32::System::Threading::{
+    AttachThreadInput, GetCurrentThreadId, OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
+    PROCESS_QUERY_LIMITED_INFORMATION,
+};
 use windows::Win32::UI::WindowsAndMessaging::{
-    BringWindowToTop, GetForegroundWindow, GetWindowThreadProcessId, SetForegroundWindow, SystemParametersInfoW,
-    SPI_GETDESKWALLPAPER, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+    BringWindowToTop, GetClassNameW, GetForegroundWindow, GetWindowThreadProcessId, SetForegroundWindow,
+    SystemParametersInfoW, SPI_GETDESKWALLPAPER, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
 };
 
 pub async fn com<T: Send + 'static>(f: impl FnOnce() -> windows::core::Result<T> + Send + 'static) -> Result<T, String> {
@@ -22,21 +27,63 @@ pub async fn com<T: Send + 'static>(f: impl FnOnce() -> windows::core::Result<T>
     .map_err(|e| e.to_string())?
 }
 
+pub fn hwnd_of(w: &WebviewWindow) -> Option<HWND> {
+    w.hwnd().ok().map(|h| HWND(h.0 as _))
+}
+
+pub unsafe fn focus_hwnd(h: HWND) {
+    if !SetForegroundWindow(h).as_bool() {
+        let fg_thread = GetWindowThreadProcessId(GetForegroundWindow(), None);
+        let me = GetCurrentThreadId();
+        let _ = AttachThreadInput(me, fg_thread, true);
+        let _ = SetForegroundWindow(h);
+        let _ = BringWindowToTop(h);
+        let _ = AttachThreadInput(me, fg_thread, false);
+    }
+}
+
 pub fn focus(w: &WebviewWindow) {
-    if let Ok(h) = w.hwnd() {
-        let h = HWND(h.0 as _);
-        unsafe {
-            if !SetForegroundWindow(h).as_bool() {
-                let fg_thread = GetWindowThreadProcessId(GetForegroundWindow(), None);
-                let me = GetCurrentThreadId();
-                let _ = AttachThreadInput(me, fg_thread, true);
-                let _ = SetForegroundWindow(h);
-                let _ = BringWindowToTop(h);
-                let _ = AttachThreadInput(me, fg_thread, false);
-            }
-        }
+    if let Some(h) = hwnd_of(w) {
+        unsafe { focus_hwnd(h) };
     }
     let _ = w.set_focus();
+}
+
+pub unsafe fn class_of(hwnd: HWND) -> String {
+    let mut buf = [0u16; 128];
+    let n = GetClassNameW(hwnd, &mut buf);
+    String::from_utf16_lossy(&buf[..n.max(0) as usize])
+}
+
+pub unsafe fn exe_of(hwnd: HWND) -> String {
+    let mut pid = 0u32;
+    GetWindowThreadProcessId(hwnd, Some(&mut pid));
+    exe_of_pid(pid)
+}
+
+pub unsafe fn exe_of_pid(pid: u32) -> String {
+    let Ok(h) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) else { return String::new() };
+    let mut buf = [0u16; 1024];
+    let mut len = buf.len() as u32;
+    let ok = QueryFullProcessImageNameW(h, PROCESS_NAME_WIN32, PWSTR(buf.as_mut_ptr()), &mut len).is_ok();
+    let _ = CloseHandle(h);
+    if ok { String::from_utf16_lossy(&buf[..len as usize]) } else { String::new() }
+}
+
+pub fn data_dir(app: &AppHandle) -> PathBuf {
+    let dir = app.path().app_data_dir().unwrap_or_else(|_| std::env::temp_dir());
+    let _ = std::fs::create_dir_all(&dir);
+    dir
+}
+
+pub fn read_stream(r: &IRandomAccessStreamReference) -> windows::core::Result<Vec<u8>> {
+    let s = r.OpenReadAsync()?.join()?;
+    let size = s.Size()? as u32;
+    let reader = DataReader::CreateDataReader(&s.GetInputStreamAt(0)?)?;
+    reader.LoadAsync(size)?.join()?;
+    let mut buf = vec![0u8; size as usize];
+    reader.ReadBytes(&mut buf)?;
+    Ok(buf)
 }
 
 pub fn hash_hex(value: impl Hash) -> String {
