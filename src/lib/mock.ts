@@ -14,7 +14,7 @@ function letterIcon(name: string) {
   return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
 }
 
-const state = { wifi: true, bluetooth: false, dark: true, awake: false, volume: 0.6, muted: false, layout: 1 };
+const state = { wifi: true, bluetooth: false, dark: true, awake: false, volume: 0.6, muted: false, layout: 1, saver: false, brightness: 70, network: "TURKNET_AFECB" };
 
 const two = (n: number) => String(n).padStart(2, "0");
 const icsTime = (d: Date) => `${d.getFullYear()}${two(d.getMonth() + 1)}${two(d.getDate())}T${two(d.getHours())}${two(d.getMinutes())}00`;
@@ -155,9 +155,37 @@ export function mock(cmd: string, args?: Record<string, unknown>): unknown {
     case "fetch_calendar":
       return sampleCalendar();
     case "quick_info":
-      return { airplane: !state.wifi && !state.bluetooth, batterySaver: true, ssid: state.wifi ? "TURKNET_AFECB" : null };
+      return { airplane: !state.wifi && !state.bluetooth, batterySaver: state.saver, ssid: state.wifi && state.network ? state.network : null };
     case "set_airplane_mode":
       state.wifi = state.bluetooth = !args?.on;
+      return null;
+    case "set_battery_saver":
+      state.saver = Boolean(args?.on);
+      return null;
+    case "wifi_networks":
+      return state.wifi
+        ? [
+            { ssid: "TURKNET_AFECB", bars: 4, secure: true },
+            { ssid: "Cafe Guest", bars: 3, secure: false },
+            { ssid: "VODAFONE_2728", bars: 2, secure: true },
+          ].map((n) => ({ ...n, connected: n.ssid === state.network }))
+        : [];
+    case "wifi_connect":
+      if (args?.ssid === "VODAFONE_2728") return false;
+      state.network = String(args?.ssid);
+      return true;
+    case "wifi_disconnect":
+      state.network = "";
+      return null;
+    case "bluetooth_devices":
+      return [
+        { name: "Lenovo WL310", connected: true },
+        { name: "SOFFANY AP-05", connected: false },
+      ];
+    case "brightness":
+      return state.brightness;
+    case "set_brightness":
+      state.brightness = Number(args?.level);
       return null;
     case "notifications":
       return {

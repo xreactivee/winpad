@@ -221,6 +221,13 @@ pub fn run() {
             calendar::fetch_calendar,
             controls::quick_info,
             controls::set_airplane_mode,
+            controls::wifi_networks,
+            controls::wifi_connect,
+            controls::wifi_disconnect,
+            controls::bluetooth_devices,
+            controls::brightness,
+            controls::set_brightness,
+            controls::set_battery_saver,
             notifications::notifications,
             notifications::dismiss_notification,
         ])

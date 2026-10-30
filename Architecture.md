@@ -107,6 +107,8 @@ Each hook gets its own thread and message loop (`hook_thread`). Windows skips a 
 
 - **Open windows.** `list_windows` walks `EnumWindows` and keeps visible, unowned (or `WS_EX_APPWINDOW`), non-tool, uncloaked (`DWMWA_CLOAKED`) windows with a title, except WinPad's own. Each has the exe path, the AUMID from `SHGetPropertyStoreForWindow` (Store apps live in `ApplicationFrameHost.exe`, so the AUMID names them) and an exe icon from the shared PNG cache. `window_action` focuses (or minimizes the window already in front, or restores a minimized one), minimizes, closes (`WM_CLOSE`) or ends the task (`TerminateProcess`).
 - **Controls.** Volume and mute through `IAudioEndpointVolume`; Wi-Fi and Bluetooth through WinRT `Radio`; light or dark through the `Personalize` registry values plus a `WM_SETTINGCHANGE "ImmersiveColorSet"` broadcast; keep awake through a power request (`PowerCreateRequest`, display and system required); keyboard layouts from `GetKeyboardLayoutList`, switched by posting `WM_INPUTLANGCHANGEREQUEST` to the foreground window (the dock never takes focus, so that is the user's app).
+- **Quick Settings panels.** The Wi-Fi name comes from the first WLAN connection profile with connectivity (`GetConnectionProfiles`), not the internet profile, so it is right next to Ethernet and empty when Wi-Fi is on but not connected. `wifi_networks` scans with WinRT `WiFiAdapter` and keeps the strongest entry per SSID; `wifi_connect` connects with the saved profile (or an open network) and answers `false` otherwise, and the page then opens `ms-availablenetworks:` because the dock cannot take keyboard focus for a password. `bluetooth_devices` lists paired Classic and LE association endpoints with `System.Devices.Aep.IsConnected`. Brightness goes through WMI `root\WMI` (`WmiMonitorBrightness`, `WmiMonitorBrightnessMethods.WmiSetBrightness`); external monitors answer nothing and the slider stays hidden. `set_brightness` runs one call at a time and drops values a newer drag has replaced.
+- **Battery saver.** Windows has no public switch for it, so `set_battery_saver` sets the energy-saver threshold (`ESBATTTHRESHOLD`, AC and DC) to 100, which Windows reads as "always on", and re-applies the active scheme. The previous thresholds go to `battery-saver.json` and come back when it is turned off (0 and 20 if the file is gone).
 - **Screen Time.** One thread, started the first time the setting is on, samples the foreground window every 5 s (AUMID for `ApplicationFrameHost.exe`, else the exe path), skips 2 minutes of idle input (`GetLastInputInfo`) and WinPad itself, and saves 8 days to `screentime.json` every minute.
 - **AI usage.** Claude: every `*.jsonl` under `~/.claude/projects` changed in the last week, read incrementally from the last offset; assistant lines are deduplicated by message and request id, tokens are input + output + cache creation, grouped into 5-hour blocks the way `ccusage` does. Codex: the last `rate_limits` record in the newest `~/.codex/sessions` files (both the nested and the older flat shape).
 - **Calendars.** `fetch_calendar` accepts only `https://` and `webcal://` (rewritten to https), downloads with WinRT `HttpClient` (system proxy and certificates), and rejects anything over 5 MB. Parsing happens in `lib/ical.ts`.
@@ -138,7 +140,8 @@ All commands are `#[tauri::command(async)]` or `async fn`. Sync Tauri commands r
 | `screen_time`, `clear_screen_time` | screentime | Up to 8 days of `{ date, total, hours[24], apps }` |
 | `ai_usage` | ai | `{ claude: { sessionTokens, sessionResetsAt, weekTokens, topModel }, codex: { primary, secondary, at } }` |
 | `fetch_calendar(url)` | calendar | The iCal text |
-| `quick_info`, `set_airplane_mode(on)` | controls | Airplane mode, battery-saver status and the Wi-Fi network name |
+| `quick_info`, `set_airplane_mode(on)`, `set_battery_saver(on)` | controls | Airplane mode, battery-saver status and the Wi-Fi network name |
+| `wifi_networks`, `wifi_connect(ssid)`, `wifi_disconnect`, `bluetooth_devices`, `brightness`, `set_brightness(level)` | controls | Quick Settings detail panels and the brightness slider (`null` without a built-in display) |
 | `notifications`, `dismiss_notification(id?)` | notifications | `{ allowed, items }`; one notification, or all of them |
 | `list_apps` | apps | Start menu's "All apps" (`FOLDERID_AppsFolder`, UWP + Win32), junk filtered, icons cached as PNG in `$APPCACHE/icons` |
 | `launch_app(id)` / `open_path(path)` | apps | `ShellExecuteExW` on its own STA thread with `SEE_MASK_NO_CONSOLE` |
@@ -174,7 +177,7 @@ All commands are `#[tauri::command(async)]` or `async fn`. Sync Tauri commands r
 
 ### `update.rs`: self-update
 
-- Release builds only. A minute after start, then every 6 hours, `tauri-plugin-updater` reads `latest.json` from the latest GitHub release (`plugins.updater.endpoints`).
+- Release builds only. A minute after start, then every hour, `tauri-plugin-updater` reads `latest.json` from the latest GitHub release (`plugins.updater.endpoints`).
 - A newer version is downloaded and checked against the minisign `pubkey`. Installation waits while Launchpad is visible, then runs the NSIS installer in quiet mode (`/S /UPDATE /R`): WinPad exits, the installer replaces it silently and starts it again.
 - `scripts/latest-json.mjs` writes `release/latest.json` (`version`, `pub_date`, `platforms.windows-x86_64.{signature, url}`) from the build's `.sig` file.
 
@@ -208,7 +211,7 @@ All commands are `#[tauri::command(async)]` or `async fn`. Sync Tauri commands r
 |---|---|
 | `lib/api.ts` | The only bridge to Rust and Tauri plugins: typed `api.*` commands (one function per Rust command), `listen` / `emit`, `fileSrc`, `currentWindow`, autostart and the folder picker |
 | `lib/mock.ts` | Sample answers for `npm run dev` outside Tauri |
-| `lib/store.ts` | Store-backed `useStored(key, default)`, `getStored` / `setStored`, cross-window sync, `onSave` hooks |
+| `lib/store.ts` | Store-backed `useStored(key, default)`, `getStored` / `setStored`, cross-window sync, `onSave` hooks. An update made before the key has loaded waits for the stored value, so it never writes over it with the default |
 | `lib/settings.ts` | `Settings` type, defaults, `useSettings()`, `useSetting(key)`; pushes settings to Rust on save |
 | `lib/hooks.ts` | `useNow`, `usePoll(fetch, ms)` (skips hidden documents, dedupes identical answers), `useOutsideClick` |
 | `lib/apps.ts` | `useApps`, `refreshApps`, `openApp` (records history), `useHistory`, `useFileSearch` (150ms debounce, drops stale answers) |

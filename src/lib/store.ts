@@ -69,8 +69,9 @@ export function useStored<T>(key: string, fallback: T) {
     };
   }, [key, initial]);
   const update = (next: T | ((prev: T) => T)) => {
-    const prev = (cache.has(key) ? cache.get(key) : value) as T;
-    void setStored(key, typeof next === "function" ? (next as (p: T) => T)(prev) : next);
+    const apply = () => void setStored(key, typeof next === "function" ? (next as (p: T) => T)(cache.get(key) as T) : next);
+    if (cache.has(key)) apply();
+    else void getStored(key, initial).then(apply);
   };
   return [value, update, ready] as const;
 }

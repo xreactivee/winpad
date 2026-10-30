@@ -128,7 +128,7 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
 
 ### Updates
 
-- WinPad updates itself in the background: it checks GitHub releases at start and every 6 hours, downloads a newer version, installs it silently and restarts.
+- WinPad updates itself in the background: it checks GitHub releases at start and every hour, downloads a newer version, installs it silently and restarts.
 - It never installs while WinPad is open on screen.
 - Updates must be signed with the project's key; unsigned or tampered downloads are rejected.
 
@@ -209,7 +209,7 @@ The visual reference is a short clip of macOS Tahoe's Launchpad, with a "liquid 
   | Insights | Screen Time, Claude usage, ChatGPT (Codex) usage |
 
 - **Apps.** Taskbar pins are imported once; Launchpad's app menu adds Pin to Dock / Unpin from Dock. A click starts a pinned app, switches to its window, minimizes it when it is already in front, or lists its windows when it has several. Middle-click opens a new window. The menu has Open / New Window, Pin or Unpin, Show in Explorer, Close Window(s) and End Task.
-- **Quick Settings.** A panel like the one the taskbar opens: Wi-Fi (with the network name), Bluetooth, airplane mode, accessibility, dark mode, keep awake, battery saver and sound, a volume slider, the battery level and a button for all settings. The chevrons open the matching Windows Settings page.
+- **Quick Settings.** A panel like the one the taskbar opens: Wi-Fi (with the network name, or "Not connected"), Bluetooth, airplane mode, accessibility, dark mode, keep awake and battery saver (which turns battery saver on and off), volume and brightness sliders, the battery level and a button for all settings. The chevrons open a panel in the same card: nearby Wi-Fi networks to join, paired Bluetooth devices, the battery, or the accessibility tools, each ending in a link to its Settings page.
 - **Notifications.** A notification centre: every app's notifications grouped by app, newest first, dismissed one at a time or all at once, with the quiet-hours switch and a focus session starter beside today's date. Clicking one opens the app it came from. Windows asks for permission once, under Privacy → Notifications.
 - **Windows banners.** An optional switch turns off "Show notification banners" for every app, so toasts stop popping up in the corner and the dock's notification centre is the only place they appear. Notifications still arrive. Apps that register later are covered within a minute, and every app's original choice is put back when the dock is off or WinPad quits.
 - **Calendars.** Secret iCal links (Google, Outlook, iCloud; https or webcal), read every 15 minutes, read-only. Recurring events, exceptions and time zones are expanded locally.

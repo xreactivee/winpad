@@ -37,6 +37,8 @@ export type ClaudeUsage = { sessionTokens: number; sessionResetsAt: number | nul
 export type CodexUsage = { primary: AiWindow | null; secondary: AiWindow | null; at: number };
 export type AiUsage = { claude: ClaudeUsage | null; codex: CodexUsage | null };
 export type QuickInfo = { airplane: boolean; batterySaver: boolean; ssid: string | null };
+export type WifiNetwork = { ssid: string; bars: number; secure: boolean; connected: boolean };
+export type BluetoothDevice = { name: string; connected: boolean };
 export type Notif = { id: number; app: string; appId: string | null; title: string; body: string; icon: string | null; at: number };
 export type NotificationFeed = { allowed: boolean; items: Notif[] };
 
@@ -88,6 +90,13 @@ export const api = {
   fetchCalendar: (url: string) => call<string>("fetch_calendar", { url }),
   quickInfo: () => call<QuickInfo>("quick_info"),
   setAirplaneMode: (on: boolean) => call("set_airplane_mode", { on }),
+  setBatterySaver: (on: boolean) => call("set_battery_saver", { on }),
+  wifiNetworks: () => call<WifiNetwork[]>("wifi_networks"),
+  connectWifi: (ssid: string) => call<boolean>("wifi_connect", { ssid }),
+  disconnectWifi: () => call("wifi_disconnect"),
+  bluetoothDevices: () => call<BluetoothDevice[]>("bluetooth_devices"),
+  brightness: () => call<number | null>("brightness"),
+  setBrightness: (level: number) => call("set_brightness", { level }),
   notifications: () => call<NotificationFeed>("notifications"),
   dismissNotification: (id: number | null = null) => call("dismiss_notification", { id }),
   quitApp: () => call("quit_app"),

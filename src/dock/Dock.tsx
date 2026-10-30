@@ -81,7 +81,7 @@ function ToastCard({ toast, onClose, onOpen }: { toast: Toast; onClose: () => vo
 
 export function Dock() {
   const [settings, setSettings] = useSettings();
-  const [layout, setLayout] = useDockLayout();
+  const [layout, setLayout, layoutReady] = useDockLayout();
   const apps = useApps();
   const { url, blurred } = useWallpaper();
   const events = useCalendarEvents(settings.dock ? settings.calendars : []);
@@ -127,16 +127,16 @@ export function Dock() {
   }, [hidden]);
 
   useEffect(() => {
-    if (settings.dock && (layout.version ?? 0) < DOCK_VERSION) setLayout(migrate);
-  }, [settings.dock, layout.version, setLayout]);
+    if (layoutReady && settings.dock && (layout.version ?? 0) < DOCK_VERSION) setLayout(migrate);
+  }, [layoutReady, settings.dock, layout.version, setLayout]);
 
   useEffect(() => {
-    if (!settings.dock || layout.seeded || !apps.length) return;
+    if (!layoutReady || !settings.dock || layout.seeded || !apps.length) return;
     api
       .taskbarPins()
-      .then((names) => setLayout((l) => ({ ...l, pins: [...new Set([...l.pins, ...pinsFromTaskbar(names, apps)])], seeded: true })))
+      .then((names) => setLayout((l) => (l.seeded ? l : { ...l, pins: [...new Set([...l.pins, ...pinsFromTaskbar(names, apps)])], seeded: true })))
       .catch(() => {});
-  }, [settings.dock, layout.seeded, apps, setLayout]);
+  }, [layoutReady, settings.dock, layout.seeded, apps, setLayout]);
 
   useEffect(() => {
     const update = () => requestAnimationFrame(() => setOrigin({ x: window.screenX, y: window.screenY }));

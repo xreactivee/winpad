@@ -65,7 +65,7 @@ src-tauri/src/
   taskbar.rs             Windows taskbar auto-hide/hide/restore, restore marker, watchdog and CLI (--restore-taskbar)
   dock.rs                dock window: AppBar registration, placement, window region, fullscreen, outside clicks
   tasks.rs               open windows (EnumWindows, AUMID), window actions, taskbar pin names
-  controls.rs            volume, Wi-Fi/Bluetooth radios, light/dark theme, keep awake, keyboard layouts
+  controls.rs            volume, Wi-Fi/Bluetooth radios and panels, brightness, battery saver, light/dark theme, keep awake, keyboard layouts
   screentime.rs          optional foreground-app tracker (screentime.json)
   ai.rs                  Claude Code and Codex usage from their local logs
   calendar.rs            iCal download (https/webcal only) through WinRT HttpClient
@@ -143,6 +143,8 @@ The previous version was unusably laggy; these rules fixed it.
   - The root `NOC_GLOBAL_SETTING_TOASTS_ENABLED` value is **not** the banner switch: setting it to 0 changes the master Notifications toggle and does not stop a single banner. WinPad only restores it to whatever the marker saved.
   - Every original per-app value goes into the restore marker (absent values come back absent), and a 60-second thread re-applies the setting so apps that register later are covered too.
 - **The dock has no notification area, on purpose.** Re-hosting Windows' tray was tried and removed in 1.0: current Windows 11 builds keep the icons in a XAML island, the legacy toolbars are empty, and the registry fallback has no window to forward a click to, so neither a real left-click nor a context menu is possible. Windows keeps its own tray; Auto-hide leaves it one nudge away. Do not reintroduce it without a way to click an icon properly.
+- **Startup effects wait for the store.** `useStored` returns the default until the key has loaded; effects that migrate or seed stored data (the dock's `migrate`, the taskbar-pin import) check its `ready` flag first. Before that fix they ran on the default layout and wrote it over the user's items and pins on every start.
+- **Quick Settings chevrons open a panel inside the card** (Wi-Fi networks, Bluetooth devices, battery, accessibility tools), each with its Settings page as the last row. The dock cannot take focus, so nothing there asks for typing: a Wi-Fi network that needs a password hands over to `ms-availablenetworks:`. Battery saver is switched through the energy-saver threshold (see Architecture.md); keep `battery-saver.json` as the way back.
 - **Anything that must keep running belongs to the dock, not to a tile.** A tile is only mounted while the user has it on the bar, so the Pomodoro session runs from `usePomodoroRunner` in `Dock`; the tile only draws it.
 - **Privacy.** iCal links are fetched by Rust (https/webcal only) and stay in the settings; AI usage reads only local logs (`~/.claude/projects`, `~/.codex/sessions`); Screen Time is opt-in and stays in `screentime.json`; notifications are read from the running session and never leave the PC.
 
@@ -167,7 +169,7 @@ The previous version was unusably laggy; these rules fixed it.
 
 ### Self-update and releases
 
-- **How it works.** `update::watch` checks `https://github.com/xreactivee/winpad/releases/latest/download/latest.json` a minute after start and then every 6 hours. A newer version is downloaded, installed with the NSIS installer in quiet mode (`/S /UPDATE /R`), and WinPad restarts. It never installs while Launchpad is visible. Debug builds never update.
+- **How it works.** `update::watch` checks `https://github.com/xreactivee/winpad/releases/latest/download/latest.json` a minute after start and then every hour. A newer version is downloaded, installed with the NSIS installer in quiet mode (`/S /UPDATE /R`), and WinPad restarts. It never installs while Launchpad is visible. Debug builds never update.
 - **Signing.** Updates are verified against the `pubkey` in `tauri.conf.json`. The private key lives outside the repo at `%USERPROFILE%\.tauri\winpad.key` (no password). Never commit it; losing it means installed copies can no longer update. Builds need `TAURI_SIGNING_PRIVATE_KEY` set to that path.
 - **Releasing.** Bump the version, build, run `node scripts/latest-json.mjs`, then attach both `release/WinPad_<version>_x64-setup.exe` and `release/latest.json` to the GitHub release `v<version>`. A release without `latest.json` (or a draft or prerelease) is invisible to the updater.
 

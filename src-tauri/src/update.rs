@@ -5,7 +5,7 @@ use tauri::AppHandle;
 use tauri_plugin_updater::UpdaterExt;
 
 const FIRST_CHECK: Duration = Duration::from_secs(60);
-const CHECK_EVERY: Duration = Duration::from_secs(6 * 60 * 60);
+const CHECK_EVERY: Duration = Duration::from_secs(60 * 60);
 const BUSY_RETRY: Duration = Duration::from_secs(30);
 
 fn update_once(app: &AppHandle) -> tauri_plugin_updater::Result<()> {

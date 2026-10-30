@@ -357,6 +357,42 @@
   border-top: 1px solid var(--sep);
 }
 
+.qs-panel {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.qs-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qs-list {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-height: 0;
+}
+
+.qs-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+}
+
+.qs-item:not(button) {
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.qs-item[data-on] {
+  background: var(--fill);
+}
+
 .nc {
   display: grid;
   grid-template-rows: auto 1fr auto;

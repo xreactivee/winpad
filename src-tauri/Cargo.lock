@@ -5273,7 +5273,7 @@ dependencies = [
 
 [[package]]
 name = "winpad"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "png 0.18.1",
  "serde",
@@ -5287,6 +5287,7 @@ dependencies = [
  "tauri-plugin-store",
  "tauri-plugin-updater",
  "windows",
+ "windows-collections",
 ]
 
 [[package]]
